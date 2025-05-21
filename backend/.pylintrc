@@ -1,0 +1,42 @@
+[MASTER]
+disable=
+    C0111,  # missing-docstring
+    C0103,  # invalid-name
+    C0114,  # missing-module-docstring
+    C0115,  # missing-class-docstring
+    C0116,  # missing-function-docstring
+    C0303,  # trailing-whitespace
+    R0903   # too-few-public-methods
+
+ignore=
+    venv,
+    .git,
+    __pycache__,
+    .vscode,
+    logs,
+
+py-version=3.11
+
+# Add your source directory to Python path
+init-hook='import sys; sys.path.append("./src")'
+
+# Specify where to analyze
+source=src
+
+[FORMAT]
+max-line-length=90
+
+[REPORTS]
+# Set the output format
+output-format=colorized
+
+# Include a brief explanation of each error
+msg-template={path}:{line}: [{msg_id}({symbol}), {obj}] {msg}
+
+[BASIC]
+# Regular expressions which should only match function or class names
+function-rgx=[a-z_][a-z0-9_]{2,70}$
+class-rgx=[A-Z_][a-zA-Z0-9_]+$
+
+# Good variable names
+good-names=i,j,k,ex,Run,_,id,ok,ip

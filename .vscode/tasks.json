@@ -1,0 +1,65 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Start App Locally",
+            "dependsOn": [
+                "Start application",
+                //"Start Backend",
+            ],
+            "dependsOrder": "sequence"
+        },
+        {
+            "label": "Start application",
+            "dependsOn": ["Start frontend"]
+        },
+        {
+            "label": "Start frontend",
+            "type": "shell",
+            "command": "npm run dev",
+            "isBackground": true,
+            "options": {
+              "cwd": "${workspaceFolder}/frontend"
+            },
+            "problemMatcher": {
+             "pattern": {
+                "regexp": "^.*$",
+                "file": 0,
+                "location": 1,
+                "message": 2
+              },
+              "background": {
+                "activeOnStart": true,
+                "beginsPattern": ".*",
+                "endsPattern": "Compiled|Failed|Ready|compiled|failed|ready"
+              }
+            }
+        },
+        // {
+        //     "label": "Start Backend",
+        //     "type": "shell",
+        //     "command": "powershell",
+        //     "args": [
+        //         "-Command",
+        //         ". .\\venv\\Scripts\\Activate.ps1; uvicorn src.main:app --reload --port 8000"
+        //     ],
+        //     "options": {
+        //         "cwd": "${workspaceFolder}/backend"
+        //     },
+        //     "presentation": {
+        //         "reveal": "always",
+        //         "panel": "dedicated"
+        //     },
+        //     "problemMatcher": []
+        // },
+        // {
+        //     "label": "Activate Environment",
+        //     "type": "shell",
+        //     "command": "powershell",
+        //     "args": [
+        //         ". .\\venv\\Scripts\\Activate.ps1"
+        //     ],
+        //     "hidden": true
+        // }
+    ]
+}

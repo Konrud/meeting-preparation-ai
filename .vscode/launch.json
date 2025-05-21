@@ -1,0 +1,121 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Backend",
+            "type": "debugpy",
+            "request": "launch",
+            // "module": "uvicorn",
+            "program": "${workspaceFolder}/backend/src/main.py",
+            "args": [
+              "src.main:app",
+              "--reload",
+              "--host", "127.0.0.1",
+              "--port", "8000",
+              "--ssl-keyfile=./localhost-key.pem",
+              "--ssl-certfile=./localhost.pem"
+            ],
+            "envFile": "${workspaceFolder}/env/.env.local",
+            "python": "${workspaceFolder}/backend/venv/Scripts/python.exe",
+            "jinja": true,
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}/backend"
+        },
+        {
+            "name": "Launch in Edge",
+            "type": "msedge",
+            "request": "launch",
+            "url": "https://localhost:5173",
+            "presentation": {
+                "group": "group 1: Launch",
+                "order": 3
+            },
+            "internalConsoleOptions": "neverOpen"
+        },
+        {
+            "name": "Launch in Chrome",
+            "type": "chrome",
+            "request": "launch",
+            "url": "https://localhost:5173",
+            "presentation": {
+                "group": "group 1: Launch",
+                "order": 3
+            },
+            "internalConsoleOptions": "neverOpen"
+        },
+        {
+            "name": "Attach to Frontend in Edge",
+            "type": "msedge",
+            "request": "launch",
+            "url": "https://localhost:5173",
+            "cascadeTerminateToConfigurations": [
+                "Attach to Local Service"
+            ],
+            "presentation": {
+                "group": "all",
+                "hidden": true
+            },
+            "internalConsoleOptions": "neverOpen",
+            "webRoot": "${workspaceFolder}/frontend"
+        },
+        {
+            "name": "Attach to Frontend in Chrome",
+            "type": "chrome",
+            "request": "launch",
+            "url": "https://localhost:5173",
+            "cascadeTerminateToConfigurations": [
+                "Attach to Local Service"
+            ],
+            "presentation": {
+                "group": "all",
+                "hidden": true
+            },
+            "internalConsoleOptions": "neverOpen",
+            "webRoot": "${workspaceFolder}/frontend"
+        },
+        {
+            "name": "Attach to Local Service",
+            "type": "node",
+            "request": "attach",
+            "port": 9239,
+            "restart": true,
+            "presentation": {
+                "group": "all",
+                "hidden": true
+            },
+            "internalConsoleOptions": "neverOpen"
+        }
+    ],
+    "compounds": [
+        {
+            "name": "Debug in Edge",
+            "configurations": [
+                "Attach to Frontend in Edge",
+                //"Launch in Edge",
+                "Attach to Local Service",
+                "Python: Backend"
+            ],
+            "preLaunchTask": "Start App Locally",
+            "presentation": {
+                "group": "group 1: Compounds",
+                "order": 1
+            },
+            "stopAll": true,
+        },
+        {
+            "name": "Debug in Chrome",
+            "configurations": [
+                "Attach to Frontend in Chrome",
+                //"Launch in Chrome",
+                "Attach to Local Service",
+                "Python: Backend"
+            ],
+            "preLaunchTask": "Start App Locally",
+            "presentation": {
+                "group": "group 1: Compounds",
+                "order": 2
+            },
+            "stopAll": true
+        },
+    ]
+}
