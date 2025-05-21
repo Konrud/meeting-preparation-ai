@@ -1,0 +1,19 @@
+{
+    "debug.onTaskErrors": "abort",
+    "json.schemas": [
+        {
+            "fileMatch": [
+                "/aad.*.json"
+            ],
+            "schema": {}
+        }
+    ],
+    "python.analysis.autoImportCompletions": true,
+    "python.analysis.typeCheckingMode": "standard",
+    "terminal.integrated.env.windows": {"PYTHONPATH": "${workspaceFolder}/backend"},
+    "python.analysis.extraPaths": [
+        "backend"
+    ],
+    "python.analysis.showOnlyDirectDependenciesInAutoImport": true,
+    "python.analysis.importFormat": "relative",
+}
