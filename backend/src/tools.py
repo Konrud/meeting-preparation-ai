@@ -7,27 +7,6 @@ tavily_api_key = os.environ.get("TAVILY_API_KEY", "")
 tavily_tool = TavilyToolSpec(api_key=tavily_api_key)
 
 
-def multiply(a: float, b: float) -> float:
-    """Multiply two numbers and returns the product"""
-    return a * b
-
-
-def add(a: float, b: float) -> float:
-    """Add two numbers and returns the sum"""
-    return a + b
-
-
-async def get_user_name(ctx: Context) -> str:
-    """Get the user's name from database and save it in Context's state."""
-    state = await ctx.get("state")
-    # Assuming the user name is fetched from a database or some other source
-    # Here we are just simulating it by setting a static value
-    user_name = "Konstantin"
-    state["user_name"] = user_name
-    await ctx.set("state", state)
-    return f"user name is set to {user_name}"
-
-
 async def get_user_approve(ctx: Context) -> str:
     """Get the user's approval for the task.
     Returns:
@@ -68,47 +47,3 @@ async def search_web(query: str) -> str:
     else:
         return "No results found."
 
-async def record_notes(ctx: Context, notes: str, notes_title: str) -> str:
-    """Record notes in the context's state.
-    Args: notes: str: The notes to be recorded.
-          notes_title: str: The title of the notes.
-    Returns: str: The notes recorded in the context's state.
-    """
-    current_state = await ctx.get("state")
-
-    research_notes_key = "research_notes"
-
-    if research_notes_key not in current_state:
-        current_state[research_notes_key] = {}
-    
-    current_state[research_notes_key][notes_title] = notes
-
-    await ctx.set("state", current_state)
-
-    return f"Notes recorded: {notes_title} - {notes}"
-
-async def write_report(ctx: Context, report_content: str) -> str:
-    """Write a report in the context's state on a given topic.
-    Args: report_content: str: The content of the report.
-    Returns: str
-    """
-    current_state = await ctx.get("state")
-    
-    current_state["report_content"] = report_content
-
-    await ctx.set("state", current_state)
-
-    return f"Report written"
-
-
-async def review_report(ctx: Context, review: str) -> str:
-    """Review the report and provide feedback.
-    Returns: str: The report content.
-    """
-    current_state = await ctx.get("state")
-    
-    current_state["review"] = review
-
-    await ctx.set("state", current_state)
-
-    return f"Report reviewed"
