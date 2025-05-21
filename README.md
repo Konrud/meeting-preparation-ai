@@ -11,7 +11,10 @@ project/
 │   └── tasks.json
 ├── backend/
 │   ├── src/
-│   │   └── main.py
+│   │   ├── main.py
+│   │   ├── workflow.py
+│   │   ├── tools.py
+│   │   └── models.py
 │   ├── venv/
 │   └── requirements.txt
 ├── frontend/
@@ -19,7 +22,6 @@ project/
 │   └── package.json
 └── env/
     ├── .env.local
-    └── .env.production
 ```
 
 ---
@@ -52,8 +54,8 @@ Set-ExecutionPolicy Bypass -Scope Process -Force
 [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
 iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
 
-# Install Python (as example we use 3.13 version)
-choco install python --version=3.13.0
+# Install Python (as example we use 3.13.3 version)
+choco install python --version=3.13.3
 
 ```
 
@@ -93,22 +95,8 @@ Add the following:
 .....
 
 # Backend
-BACKEND_COSMOS_DB_ENDPOINT=https://industry-prompt-enhancer-cosmosdb-account.documents.azure.com:443/
-BACKEND_COSMOS_DB_NAME=industry_prompt_enhancer_cosmos_db
-BACKEND_COSMOS_DB_USERS_CONTAINER_NAME=users
-BACKEND_COSMOS_DB_PROMPTS_CONTAINER_NAME=prompts
+
 ```
-
-**Values on Azure:**
-
-_Cosmos DB Endpoint URI_
-
-![Cosmos DB Endpoint URI](./images/Azure_Cosmos_DB_Endpoint_URI.jpg)
-
-_Cosmos DB Name and Containers_
-![Cosmos DB Name and Containers](./images/Azure_Cosmos_DB_Name_Containers_Prompt_and_Users.jpg)
-
----
 
 ## VS Code Setup:
 
@@ -137,9 +125,6 @@ python -m venv venv
 
 # Windows
 ...\IndustryPromptEnhancer\backend> venv\Scripts\activate
-
-# macOS/Linux
-...\IndustryPromptEnhancer\backend> source venv/bin/activate
 
 ```
 

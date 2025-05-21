@@ -1,0 +1,80 @@
+from dotenv import load_dotenv
+from llama_index.core.workflow import StartEvent, StopEvent, Workflow, step, Context
+from azure.identity import DefaultAzureCredential, get_bearer_token_provider
+from src.enums import ProgressEventType
+from src.events import ProgressEvent
+from src.tools import get_user_approve, search_web
+from utils.logger import consoleLogger, timeFileLogger
+
+# Load environment variables
+load_dotenv()
+
+class ProgressWorkflow(Workflow):
+    
+    def __init__(self):
+            super().__init__()
+            
+            credential = DefaultAzureCredential()
+            
+            self.token_provider = get_bearer_token_provider(
+                credential, "https://cognitiveservices.azure.com/.default"
+            )
+            
+    @step
+    async def init_step(self, ctx: Context, event: StartEvent) -> RunQueryEvent:
+
+        ctx.write_event_to_stream(ProgressEvent(type=ProgressEventType.NEW, message="init_step is happening"))
+        # Get model from the event (initiated when we run the workflow [e.g. workflow.run(model=model)])
+        model = event.model
+
+        # Add the model to the state in the context [ctx.get("state")] which is always defined by the framework
+        current_state = {"model": model}
+        print(f"{current_state=}")
+
+        await ctx.set("state", current_state)
+
+        return RunQueryEvent(run_query_output="First event output")
+
+    @step
+    async def run_query_step(self, ctx: Context, event: RunQueryEvent) -> FinalEvent:
+
+        ctx.write_event_to_stream(ProgressEvent(type=ProgressEventType.NEW, message="run_query_step is happening"))
+
+        current_state = await ctx.get("state")
+
+        if current_state is None:
+            raise ValueError("State not found in context")
+
+        # model = cast(OpenAI, current_state["model"])
+        
+        model = AzureOpenAI(
+            azure_endpoint="https://azure-openai-gpt-4-resource.openai.azure.com/openai/deployments/gpt-4.5-preview/chat/completions?api-version=2025-01-01-preview",
+            engine="gpt-4.5-preview",
+            api_version="2025-01-01-preview",
+            model="gpt-4.5-preview",
+            azure_ad_token_provider=token_provider,
+            use_azure_ad=True,
+        )
+
+        generator = await model.astream_complete(
+            prompt="Give me first paragraph of David Copperfield book by Charles Dickens in the public domain. Provide only the book's text. Do not add any additional information."
+        )
+
+        response = None
+
+        async for response in generator:
+            #  Allow the workflow to stream the response delta
+            ctx.write_event_to_stream(
+                ProgressEvent(type=ProgressEventType.NEW, message=response.delta or "response delta is empty")
+            )
+
+        return FinalEvent(
+            final_output="\nRun Query step is complete, full response is attached",
+            response=str(response),
+        )
+
+    @step
+    async def finish_step(self, ctx: Context, event: FinalEvent) -> StopEvent:
+        ctx.write_event_to_stream(ProgressEvent(type=ProgressEventType.NEW, message="finish_step is happening"))
+        return StopEvent(result="Finish Step -> Stop")
+
