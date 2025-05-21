@@ -1,10 +1,15 @@
+import os
 from dotenv import load_dotenv
+from llama_index.core.agent.workflow import ReActAgent
 from llama_index.core.workflow import StartEvent, StopEvent, Workflow, step, Context
+from llama_index.core.prompts import RichPromptTemplate
 from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 from src.enums import ProgressEventType
 from src.events import ProgressEvent
+from src.prompts import REACT_AGENT_SYSTEM_PROMPT_TEMPLATE
 from src.tools import get_user_approve, search_web
 from utils.logger import consoleLogger, timeFileLogger
+from llama_index.llms.azure_openai import AzureOpenAI
 
 # Load environment variables
 load_dotenv()
@@ -16,8 +21,37 @@ class ProgressWorkflow(Workflow):
             
             credential = DefaultAzureCredential()
             
-            self.token_provider = get_bearer_token_provider(
+            token_provider = get_bearer_token_provider(
                 credential, "https://cognitiveservices.azure.com/.default"
+            )
+
+            azure_endpoint = os.environ.get("AZURE_ENDPOINT", "")
+            azure_open_ai_api_version = os.environ.get("AZURE_OPEN_AI_API_VERSION", "")
+
+            model = AzureOpenAI(
+                azure_endpoint=azure_endpoint,
+                engine="gpt-4o",
+                api_version=azure_open_ai_api_version,
+                model="gpt-4o",
+                azure_ad_token_provider=token_provider,
+                use_azure_ad=True,
+            )
+
+            system_prompt_template = REACT_AGENT_SYSTEM_PROMPT_TEMPLATE
+
+            system_prompt_raw = RichPromptTemplate(system_prompt_template)
+
+            system_prompt = system_prompt_raw.format(
+                    tool=search_web.__name__,
+                    meeting_info="Company: monday.com, Attendees: Maya Asher",
+                )
+
+            self.agent = ReActAgent(
+                name="searchAgent",
+                description="Searches the web for the given query and returns the result.",
+                tools=[search_web],
+                system_prompt=system_prompt,
+                llm=model,
             )
             
     @step
@@ -47,14 +81,7 @@ class ProgressWorkflow(Workflow):
 
         # model = cast(OpenAI, current_state["model"])
         
-        model = AzureOpenAI(
-            azure_endpoint="https://azure-openai-gpt-4-resource.openai.azure.com/openai/deployments/gpt-4.5-preview/chat/completions?api-version=2025-01-01-preview",
-            engine="gpt-4.5-preview",
-            api_version="2025-01-01-preview",
-            model="gpt-4.5-preview",
-            azure_ad_token_provider=token_provider,
-            use_azure_ad=True,
-        )
+
 
         generator = await model.astream_complete(
             prompt="Give me first paragraph of David Copperfield book by Charles Dickens in the public domain. Provide only the book's text. Do not add any additional information."
