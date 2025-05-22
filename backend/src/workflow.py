@@ -142,8 +142,6 @@ class ProgressWorkflow(Workflow):
         try: 
             ctx.write_event_to_stream(ProgressEvent(type=ProgressEventType.FORMATTING, message="the response is being formatted"))
         
-            
-            
             format_prompt_raw = RichPromptTemplate(FORMAT_RESPONSE_PROMPT_TEMPLATE)
                 
             format_prompt = format_prompt_raw.format(research_results=event.response)
