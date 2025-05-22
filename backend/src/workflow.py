@@ -12,7 +12,7 @@ from llama_index.core.prompts import RichPromptTemplate
 from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 from src.enums import ProgressEventType
 from src.events import FinalEvent, FormatEvent, ProgressEvent, ResearchEvent
-from src.prompts import REACT_AGENT_USER_PROMPT_TEMPLATE
+from src.prompts import FORMAT_RESPONSE_PROMPT_TEMPLATE, REACT_AGENT_USER_PROMPT_TEMPLATE
 from src.tools import search_web
 from utils.logger import consoleLogger, timeFileLogger
 from llama_index.llms.azure_openai import AzureOpenAI
@@ -142,7 +142,13 @@ class ProgressWorkflow(Workflow):
         try: 
             ctx.write_event_to_stream(ProgressEvent(type=ProgressEventType.FORMATTING, message="the response is being formatted"))
         
-        
+            
+            
+            format_prompt_raw = RichPromptTemplate(FORMAT_RESPONSE_PROMPT_TEMPLATE)
+                
+            format_prompt = format_prompt_raw.format(research_results=event.response)
+            
+            formatted_response = await self.model.acomplete(prompt=format_prompt)
         
         except Exception as e:
             exception_text = f"Error running {self.format_step.__name__}\n: {e}"
@@ -150,7 +156,7 @@ class ProgressWorkflow(Workflow):
             timeFileLogger.error(exception_text)
             raise WorkflowRuntimeError(exception_text)
 
-        return FinalEvent(message="format step is complete", response=event.response)
+        return FinalEvent(message="format step is complete", response=str(formatted_response.raw))
     
     @step
     async def finish_step(self, ctx: Context, event: FinalEvent) -> StopEvent:
