@@ -10,5 +10,9 @@ class FinalEvent(Event):
     message: str
     response: str
     
+class FormatEvent(Event):
+    message: str
+    response: str
+    
 class ResearchEvent(Event):
     pass
