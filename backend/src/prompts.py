@@ -21,7 +21,7 @@ When responding, follow this format:
 Begin!
 """
 
-FORMAT_RESPONSE_PROMPT_TEMPLATE = """You are a meeting preparation assistant. Given a list of calendar events and research results about the companies and attendees involved in the meetings, your task is to create a well-structured markdown document to prepare your colleagues for the day's meetings. Optimize for clarity and conciseness, and do not include any irrelevant information.
+FORMAT_RESPONSE_PROMPT_TEMPLATE = """You are a meeting preparation assistant. Given a list of research results about the companies and attendees involved in the meetings, your task is to create a well-structured markdown document to prepare your colleagues for the day's meetings. Optimize for clarity and conciseness, and do not include any irrelevant information.
 
         For each meeting, create a section with the following subsections:
 
@@ -52,7 +52,6 @@ FORMAT_RESPONSE_PROMPT_TEMPLATE = """You are a meeting preparation assistant. Gi
         - If certain information is not available, omit that subsection or provide a note, e.g., 'No background information available.'
 
         **Inputs:**
-        - Calendar Events: {{calendar_events}}
         - Research Results: {{research_results}}
 """
 
