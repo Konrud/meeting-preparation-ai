@@ -21,6 +21,41 @@ When responding, follow this format:
 Begin!
 """
 
+FORMAT_RESPONSE_PROMPT_TEMPLATE = """You are a meeting preparation assistant. Given a list of calendar events and research results about the companies and attendees involved in the meetings, your task is to create a well-structured markdown document to prepare your colleagues for the day's meetings. Optimize for clarity and conciseness, and do not include any irrelevant information.
+
+        For each meeting, create a section with the following subsections:
+
+        - ## [Meeting Title or Company Name] at [Time, if available]
+
+        - ### Meeting Context
+        - **Purpose:** [brief description of the meeting's purpose, if available]
+        - **Background:** [any relevant background information about the meeting or the relationship with the company, if available]
+
+        - ### Company Information
+        - [key facts about the company, such as industry, size, recent news, etc., from the research results]
+
+        - ### Attendees
+        - #### [Attendee Name]
+            - **Role:** [their role or position, from the research results]
+            - **Background:** [brief background information, from the research results]
+            - **Relevant Information:** [any other relevant details, such as their interests, previous interactions, etc., from the research results]
+        - [Repeat for each attendee]
+
+        - [Repeat for each meeting]
+
+        **Formatting Instructions:**
+        - Use proper markdown formatting:
+        - Use **bold** for headings and key terms.
+        - Use *italics* for emphasis.
+        - Use bullet points for lists of facts or information.
+        - Include inline citations as Markdown hyperlinks, e.g., [source](link), for any information from the research results.
+        - If certain information is not available, omit that subsection or provide a note, e.g., 'No background information available.'
+
+        **Inputs:**
+        - Calendar Events: {{calendar_events}}
+        - Research Results: {{research_results}}
+"""
+
 
 REACT_AGENT_USER_PROMPT_TEMPLATE = """Your goal is to help me prepare for an upcoming meeting by gathering information about the attendees and the company we are meeting with.
 

@@ -11,7 +11,7 @@ from llama_index.core.workflow.errors import WorkflowRuntimeError
 from llama_index.core.prompts import RichPromptTemplate
 from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 from src.enums import ProgressEventType
-from src.events import FinalEvent, ProgressEvent, ResearchEvent
+from src.events import FinalEvent, FormatEvent, ProgressEvent, ResearchEvent
 from src.prompts import REACT_AGENT_USER_PROMPT_TEMPLATE
 from src.tools import search_web
 from utils.logger import consoleLogger, timeFileLogger
@@ -43,12 +43,6 @@ class ProgressWorkflow(Workflow):
                 use_azure_ad=True,
             )
 
-            # system_prompt_template = REACT_AGENT_SYSTEM_PROMPT_TEMPLATE
-
-            # system_prompt_raw = RichPromptTemplate(system_prompt_template)
-
-            # system_prompt = system_prompt_raw.format(tools=search_web.__name__)
-
             self.agent = ReActAgent(
                 name="searchAgent",
                 description="Searches the web for the given query and returns the result.",
@@ -62,14 +56,6 @@ class ProgressWorkflow(Workflow):
 
         try:
             ctx.write_event_to_stream(ProgressEvent(type=ProgressEventType.INIT, message="init_step is happening"))
-            # Get model from the event (initiated when we run the workflow [e.g. workflow.run(model=model)])
-            # model = event.model
-
-            # # Add the model to the state in the context [ctx.get("state")] which is always defined by the framework
-            # current_state = {"model": model}
-            # print(f"{current_state=}")
-
-            # await ctx.set("state", current_state)
             
         except Exception as e:
             exception_text = f"Error running {self.init_step.__name__}\n: {e}"
@@ -80,19 +66,12 @@ class ProgressWorkflow(Workflow):
         return ResearchEvent()
 
     @step
-    async def research_step(self, ctx: Context, event: ResearchEvent) -> FinalEvent:
+    async def research_step(self, ctx: Context, event: ResearchEvent) -> FormatEvent:
         """Use ReAct agent to search for information about the company and meeting attendees"""
         
         try:
 
             ctx.write_event_to_stream(ProgressEvent(type=ProgressEventType.PROCESSING, message="ReAct agent is running"))
-
-            # current_state = await ctx.get("state")
-
-            # if current_state is None:
-            #     raise ValueError("State not found in context")
-
-            # model = cast(OpenAI, current_state["model"])
                 
             search_prompt_raw = RichPromptTemplate(REACT_AGENT_USER_PROMPT_TEMPLATE)
             
@@ -137,30 +116,42 @@ class ProgressWorkflow(Workflow):
                     print(f"  Arguments: {handler_event.tool_kwargs}\n")
                     print(f"  Output: {handler_event.tool_output}\n")
                     print(f"{'='*20}\n")
-
-            # generator = await model.astream_complete(
-            #     prompt="Give me first paragraph of David Copperfield book by Charles Dickens in the public domain. Provide only the book's text. Do not add any additional information."
-            # )
             
+            
+            # Get the final response
             response = await handler
             print(f"\n===\nresponse: {str(response)}\n===\n")
             
             
-                # #  Allow the workflow to stream the response delta
-                # ctx.write_event_to_stream(
-                #     ProgressEvent(type=ProgressEventType.NEW, message=response.delta or "response delta is empty")
-                # )
         except Exception as e:
             exception_text = f"Error running {self.research_step.__name__}\n: {e}"
             consoleLogger.error(exception_text)
             timeFileLogger.error(exception_text)
             raise WorkflowRuntimeError(exception_text)
 
-        return FinalEvent(
-            message="\nRun Query step is complete, full response is attached",
+
+        return FormatEvent(
+            message="\nResearch step is complete, full response is attached",
             response=str(response),
         )
+        
+    @step
+    async def format_step(self, ctx: Context, event: FormatEvent) -> FinalEvent:
+        """Format the response"""
+        
+        try: 
+            ctx.write_event_to_stream(ProgressEvent(type=ProgressEventType.FORMATTING, message="the response is being formatted"))
+        
+        
+        
+        except Exception as e:
+            exception_text = f"Error running {self.format_step.__name__}\n: {e}"
+            consoleLogger.error(exception_text)
+            timeFileLogger.error(exception_text)
+            raise WorkflowRuntimeError(exception_text)
 
+        return FinalEvent(message="format step is complete", response=event.response)
+    
     @step
     async def finish_step(self, ctx: Context, event: FinalEvent) -> StopEvent:
         ctx.write_event_to_stream(ProgressEvent(type=ProgressEventType.COMPLETED, message="finish_step is happening"))

@@ -2,9 +2,8 @@ from enum import Enum
 
 
 class ProgressEventType(str, Enum):
-    NEW = "new"
+    INIT = "init"
     PROCESSING = "processing"
-    PENDING = "pending"
-    REJECTED = "rejected"
-    APPROVED = "approved"
+    FORMATTING = "formatting"
+    COMPLETED = "completed"
     FAILED = "failed"
