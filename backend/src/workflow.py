@@ -74,8 +74,13 @@ class ProgressWorkflow(Workflow):
             ctx.write_event_to_stream(ProgressEvent(type=ProgressEventType.PROCESSING, message="ReAct agent is running"))
                 
             search_prompt_raw = RichPromptTemplate(REACT_AGENT_USER_PROMPT_TEMPLATE)
+
+            meeting_info = await ctx.get("meeting_info")
+
+            if not meeting_info:
+                raise ValueError("Meeting information is not available in the context.")
             
-            search_prompt = search_prompt_raw.format(meeting_info="Company: monday.com, Attendees: Maya Asher")
+            search_prompt = search_prompt_raw.format(meeting_info=meeting_info)
             
             handler = self.agent.run(user_msg=search_prompt, ctx=ctx)
             

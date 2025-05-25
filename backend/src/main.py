@@ -1,6 +1,8 @@
+import os
 from dotenv import load_dotenv
 from utils.logger import consoleLogger, timeFileLogger
 import asyncio
+from fastapi import Request
 import json
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -24,13 +26,28 @@ app.add_middleware(
 )
 
 @app.post("/api/run-workflow")
-async def run_workflow_endpoint():
+async def run_workflow_endpoint(request: Request):
+    try:
+        payload = await request.json()
+    except HTTPException as e:
+        raise HTTPException(
+            status_code=400, detail={"message": f"Invalid JSON: {str(e)}"}
+        )
+
     try:
         # Initialize the workflow
         progress_workflow = ProgressWorkflow()
 
+        mock_company_name = os.environ.get("MOCK_COMPANY_NAME")
+        mock_attendees = os.environ.get("MOCK_ATTENDEES")
+
+        company = payload.get("company", mock_company_name)
+        attendees = payload.get("attendees", mock_attendees)
+
         # Context
         ctx = Context(workflow=progress_workflow)
+
+        await ctx.set("meeting_info", {"company": company, "attendees": attendees})
 
         workflow_handler = progress_workflow.run(ctx=ctx)
 
