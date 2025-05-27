@@ -3,31 +3,31 @@ import "./App.css";
 import { EventType } from "./enums/EventType.enum";
 import type { IStreamingResponse } from "./interfaces/IStreamingResponse.interface";
 
-const source = new EventSource("http://localhost:5000/api/run-workflow");
+// const source = new EventSource("http://localhost:5000/api/run-workflow");
 
-source.onmessage = (event) => {
-  const data = JSON.parse(event.data);
-  if (data.type === EventType.PROGRESS) {
-    console.log(`Progress: ${data.data.type} - ${data.data.message}`);
-  } else if (data.type === EventType.FINAL) {
-    console.log(`Final Result: ${data.data}`);
-    source.close();
-  }
-};
+// source.onmessage = (event) => {
+//   const data = JSON.parse(event.data);
+//   if (data.type === EventType.PROGRESS) {
+//     console.log(`Progress: ${data.data.type} - ${data.data.message}`);
+//   } else if (data.type === EventType.FINAL) {
+//     console.log(`Final Result: ${data.data}`);
+//     source.close();
+//   }
+// };
 
-source.onerror = (event) => {
-  // if (event.target?.readyState === EventSource.CLOSED) {
-  //   console.log("Connection closed.");
-  //   return;
-  // }
+// source.onerror = (event) => {
+//   // if (event.target?.readyState === EventSource.CLOSED) {
+//   //   console.log("Connection closed.");
+//   //   return;
+//   // }
 
-  console.error("EventSource failed:", event);
-  source.close();
-};
+//   console.error("EventSource failed:", event);
+//   source.close();
+// };
 
-source.onopen = (event) => {
-  console.log(`Connection opened.\n event: ${event}`);
-};
+// source.onopen = (event) => {
+//   console.log(`Connection opened.\n event: ${event}`);
+// };
 
 function App() {
   const [loading, setLoading] = useState(false);
@@ -44,12 +44,15 @@ function App() {
     }
   }, [streamContent, statusType]);
 
-  const handleClick = async () => {
+  const handleClick = async (e) => {
+    e.preventDefault();
+    setLoading(true);
     try {
-      const response = await fetch("/api/run-workflow", {
+      const response = await fetch("http://localhost:5000/api/run-workflow", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
         },
         body: JSON.stringify({ company: "monday.com", attendees: ["Maya Asher"] }),
       });
@@ -84,7 +87,7 @@ function App() {
               setStatusType(event.type);
               setStreamContent(JSON.stringify(event.data));
               console.log(`Final Result: ${event.data}`);
-              source.close();
+              // source.close();
             }
           } catch (e) {
             console.error("Error parsing event:", e);
@@ -121,7 +124,7 @@ function App() {
         </div>
       )}
 
-      <form action="">
+      <form action="" onSubmit={handleClick}>
         <div className="c-form_field">
           <label htmlFor="company" className="c-form__label">
             Company
@@ -138,7 +141,7 @@ function App() {
           <input type="text" name="attendees" id="attendees" className="c-form_input" />
         </div>
         <div className="c-form_field">
-          <button disabled={loading} onClick={handleClick} className="c-form__button">
+          <button disabled={loading} className="c-form__button">
             Analyze
           </button>
         </div>
