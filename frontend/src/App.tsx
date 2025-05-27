@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import "./App.css";
 import { EventType } from "./enums/EventType.enum";
 import type { IStreamingResponse } from "./interfaces/IStreamingResponse.interface";
@@ -44,7 +44,7 @@ function App() {
     }
   }, [streamContent, statusType]);
 
-  const handleClick = async (e) => {
+  const handleClick = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
     try {
