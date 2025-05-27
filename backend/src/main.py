@@ -1,7 +1,6 @@
 import os
 from dotenv import load_dotenv
 from utils.logger import consoleLogger, timeFileLogger
-import asyncio
 from fastapi import Request
 import json
 from fastapi import FastAPI, HTTPException
@@ -35,8 +34,8 @@ async def run_workflow_endpoint(request: Request):
         )
 
     try:
-        # Initialize the workflow
-        progress_workflow = ProgressWorkflow()
+        # Initialize the workflow timeout for 3 minutes
+        progress_workflow = ProgressWorkflow(verbose=True, timeout=180)
 
         mock_company_name = os.environ.get("MOCK_COMPANY_NAME")
         mock_attendees = os.environ.get("MOCK_ATTENDEES")

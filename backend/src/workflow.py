@@ -22,8 +22,8 @@ load_dotenv()
 
 class ProgressWorkflow(Workflow):
     
-    def __init__(self):
-            super().__init__()
+    def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
             
             credential = DefaultAzureCredential()
             
@@ -70,7 +70,6 @@ class ProgressWorkflow(Workflow):
         """Use ReAct agent to search for information about the company and meeting attendees"""
         
         try:
-
             ctx.write_event_to_stream(ProgressEvent(type=ProgressEventType.PROCESSING, message="ReAct agent is running"))
                 
             search_prompt_raw = RichPromptTemplate(REACT_AGENT_USER_PROMPT_TEMPLATE)
@@ -83,44 +82,46 @@ class ProgressWorkflow(Workflow):
             search_prompt = search_prompt_raw.format(meeting_info=meeting_info)
             
             handler = self.agent.run(user_msg=search_prompt, ctx=ctx)
+
+            # response = await self.agent.run(user_msg=search_prompt, ctx=ctx)
             
-            current_agent = None
+            # current_agent = None
 
-            async for handler_event in handler.stream_events():
+            # async for handler_event in handler.stream_events():
 
-                if (
-                    hasattr(handler_event, "current_agent_name")
-                    and handler_event.current_agent_name != current_agent
-                ):
-                    current_agent = handler_event.current_agent_name
-                    print(f"\n{'='*20}")
-                    print(f"🤖 Agent: {current_agent}")
-                    print(f"{'='*20}\n")
+            #     if (
+            #         hasattr(handler_event, "current_agent_name")
+            #         and handler_event.current_agent_name != current_agent
+            #     ):
+            #         current_agent = handler_event.current_agent_name
+            #         print(f"\n{'='*20}")
+            #         print(f"🤖 Agent: {current_agent}")
+            #         print(f"{'='*20}\n")
 
-                elif isinstance(handler_event, AgentOutput):
-                    if handler_event.response.content:
-                        print(f"{'='*20}\n")
-                        print("📤 Agent Output:", handler_event.response.content)
-                        print(f"{'='*20}\n")
-                    if handler_event.tool_calls:
-                        print(f"{'='*20}\n")
-                        print(
-                            "🛠️  Planning to use tools:",
-                            [call.tool_name for call in handler_event.tool_calls],
-                        )
-                        print(f"{'='*20}\n")
+            #     elif isinstance(handler_event, AgentOutput):
+            #         if handler_event.response.content:
+            #             print(f"{'='*20}\n")
+            #             print("📤 Agent Output:", handler_event.response.content)
+            #             print(f"{'='*20}\n")
+            #         if handler_event.tool_calls:
+            #             print(f"{'='*20}\n")
+            #             print(
+            #                 "🛠️  Planning to use tools:",
+            #                 [call.tool_name for call in handler_event.tool_calls],
+            #             )
+            #             print(f"{'='*20}\n")
 
-                elif isinstance(handler_event, ToolCall):
-                    print(f"{'='*20}\n")
-                    print(f"🔨 Calling Tool: {handler_event.tool_name}\n")
-                    print(f"  With arguments: {handler_event.tool_kwargs}\n")
-                    print(f"{'='*20}\n")
+            #     elif isinstance(handler_event, ToolCall):
+            #         print(f"{'='*20}\n")
+            #         print(f"🔨 Calling Tool: {handler_event.tool_name}\n")
+            #         print(f"  With arguments: {handler_event.tool_kwargs}\n")
+            #         print(f"{'='*20}\n")
 
-                elif isinstance(handler_event, ToolCallResult):
-                    print(f"🔧 Tool Call Result: ({handler_event.tool_name})\n")
-                    print(f"  Arguments: {handler_event.tool_kwargs}\n")
-                    print(f"  Output: {handler_event.tool_output}\n")
-                    print(f"{'='*20}\n")
+            #     elif isinstance(handler_event, ToolCallResult):
+            #         print(f"🔧 Tool Call Result: ({handler_event.tool_name})\n")
+            #         print(f"  Arguments: {handler_event.tool_kwargs}\n")
+            #         print(f"  Output: {handler_event.tool_output}\n")
+            #         print(f"{'='*20}\n")
             
             
             # Get the final response
