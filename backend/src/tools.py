@@ -1,11 +1,5 @@
 import os
 from llama_index.core.tools import FunctionTool
-from llama_index.core.workflow import (
-    Context,
-    Event,
-    HumanResponseEvent,
-    InputRequiredEvent,
-)
 from llama_index.tools.tavily_research import TavilyToolSpec
 from llama_index.core.schema import Document
 from typing import List
@@ -35,14 +29,18 @@ async def search_web(query: str) -> List[Document] | str:
         return "No results found."
 
 
-search_web_tool_inner = FunctionTool.from_defaults(
+# search_web_function_tool = FunctionTool.from_defaults(
+#     fn=search_web,
+#     name="search_web",
+#     description="Searches the web for the given query and returns the result.",
+# )
+
+# search_web_tool = LoadAndSearchToolSpec.from_defaults(
+#     tool=search_web_function_tool
+# ).to_tool_list()
+
+search_web_tool = FunctionTool.from_defaults(
     fn=search_web,
     name="search_web",
     description="Searches the web for the given query and returns the result.",
 )
-
-search_web_tool = LoadAndSearchToolSpec.from_defaults(
-    tool=search_web_tool_inner,
-    name="search_web",
-    description="Searches the web for the given query and returns the result.",
-).to_tool_list()

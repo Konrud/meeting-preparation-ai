@@ -2,38 +2,14 @@ import { useEffect, useState, type FormEvent } from "react";
 import "./App.css";
 import { EventType } from "./enums/EventType.enum";
 import type { IStreamingResponse } from "./interfaces/IStreamingResponse.interface";
-
-// const source = new EventSource("http://localhost:5000/api/run-workflow");
-
-// source.onmessage = (event) => {
-//   const data = JSON.parse(event.data);
-//   if (data.type === EventType.PROGRESS) {
-//     console.log(`Progress: ${data.data.type} - ${data.data.message}`);
-//   } else if (data.type === EventType.FINAL) {
-//     console.log(`Final Result: ${data.data}`);
-//     source.close();
-//   }
-// };
-
-// source.onerror = (event) => {
-//   // if (event.target?.readyState === EventSource.CLOSED) {
-//   //   console.log("Connection closed.");
-//   //   return;
-//   // }
-
-//   console.error("EventSource failed:", event);
-//   source.close();
-// };
-
-// source.onopen = (event) => {
-//   console.log(`Connection opened.\n event: ${event}`);
-// };
+import { formatDate } from "./utilities/date";
 
 function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>("");
   const [statusType, setStatusType] = useState<string>("");
-  const [streamContent, setStreamContent] = useState<string>("");
+  const [streamContent, setStreamContent] = useState<string[]>([]);
+  const [finalResponse, setFinalResponse] = useState<string>("");
 
   useEffect(() => {
     if (streamContent.length > 0) {
@@ -81,13 +57,13 @@ function App() {
 
             if (event.type === EventType.PROGRESS) {
               setStatusType(event.data.type);
-              setStreamContent(event.data.message);
+              setStreamContent((prev) => [...prev, event.data.message]);
               console.log(`Progress: ${event.data.type} - ${event.data.message}`);
             } else if (event.type === EventType.FINAL) {
               setStatusType(event.type);
-              setStreamContent(JSON.stringify(event.data));
+              debugger;
+              setFinalResponse(JSON.stringify(event.data));
               console.log(`Final Result: ${event.data}`);
-              // source.close();
             }
           } catch (e) {
             console.error("Error parsing event:", e);
@@ -118,9 +94,29 @@ function App() {
 
       {error && !loading && <div className="c-error">{error}</div>}
 
-      {streamContent && !loading && (
+      {streamContent?.length > 0 && !loading && (
         <div className="l-stream-content">
-          <p>{streamContent}</p>
+          <ul>
+            {streamContent.map((value, i) => {
+              const currentDate = formatDate({
+                date: new Date(),
+                locale: Intl.DateTimeFormat().resolvedOptions().locale,
+              });
+              return (
+                <li key={i}>
+                  <time>{currentDate}</time>
+                  <p>{value}</p>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+
+      {streamContent?.length > 0 && !loading && (
+        <div className="l-final-response-content">
+          <h2>Final Response</h2>
+          <div className="c-pre">{finalResponse}</div>
         </div>
       )}
 
