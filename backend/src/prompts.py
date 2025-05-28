@@ -62,7 +62,7 @@ REACT_AGENT_USER_PROMPT_TEMPLATE = """Your goal is to help me prepare for an upc
 
             {{meeting_info}}
 
-            Please perform the following tasks:
+            Please perform the following tasks, using available tools {{tools}}:
 
             1. Find the professional profiles (e.g., LinkedIn) of each attendee.
             - Use all available information such as their full name, email, initials, last name, and the company they work for to accurately identify the correct profiles.
