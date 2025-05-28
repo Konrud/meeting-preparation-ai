@@ -22,7 +22,7 @@ from src.prompts import (
     REACT_AGENT_SYSTEM_PROMPT_TEMPLATE,
     REACT_AGENT_USER_PROMPT_TEMPLATE,
 )
-from src.tools import search_web_tool, tavily_tool, search_web_tool_inner
+from src.tools import search_web_tool
 from llama_index.core.tools import FunctionTool, ToolMetadata
 from utils.logger import consoleLogger, timeFileLogger
 from llama_index.llms.azure_openai import AzureOpenAI
@@ -55,36 +55,14 @@ class ProgressWorkflow(Workflow):
             use_azure_ad=True,
         )
 
-        # self.agent = ReActAgent(
-        #     name="searchAgent",
-        #     description="Searches the web for the given query and returns the result.",
-        #     tools=[search_web],
-        #     # system_prompt=system_prompt,
-        #     llm=self.model,
-        # )
-
         self.agent = ReActAgent(
             name="searchAgent",
             description="Searches the web for the given query and returns the result.",
-            tools=[search_web_tool_inner],
-            # tools=tavily_tool.to_tool_list(),
+            # tools=search_web_tool,
+            tools=[search_web_tool],
             llm=self.model,
-            system_prompt=REACT_AGENT_SYSTEM_PROMPT_TEMPLATE,
+            # system_prompt=REACT_AGENT_SYSTEM_PROMPT_TEMPLATE,
         )
-
-        # search_web_tool = FunctionTool(
-        #     fn=search_web,
-        #     metadata=ToolMetadata(
-        #         name="search_web",
-        #         description="Searches the web for the given query and returns the result.",
-        #     ),
-        # )
-
-        # self.agent = ReActAgent.from_tools(
-        #     tools=[search_web_tool],
-        #     llm=self.model,
-        #     verbose=True,
-        # )
 
         phoenix_api_key = os.environ.get("PHOENIX_API_KEY", "")
         os.environ["OTEL_EXPORTER_OTLP_HEADERS"] = f"api_key={phoenix_api_key}"
@@ -127,58 +105,44 @@ class ProgressWorkflow(Workflow):
                 raise ValueError("Meeting information is not available in the context.")
 
             search_prompt = search_prompt_raw.format(
-                meeting_info=meeting_info, tools=[search_web_tool_inner.metadata.name]
+                meeting_info=meeting_info, 
+                # tools=[search_web_tool[0].metadata.name]
+                tools=[search_web_tool.metadata.name]
             )
 
             handler = self.agent.run(
                 user_msg=search_prompt,
                 # ctx=ctx,
-                # *{"root_agent": self.agent.name},
             )
-
-            # ! ReactAgent from llama_index.core.agent LEAGACY
-            # handler = self.agent.astream_chat(message=search_prompt)
-
-            # response = await self.agent.run(user_msg=search_prompt, ctx=ctx)
 
             # current_agent = None
 
-            # async for handler_event in handler.stream_events():
+            async for handler_event in handler.stream_events():
 
-            # if (
-            #     hasattr(handler_event, "current_agent_name")
-            #     and handler_event.current_agent_name != current_agent
-            # ):
-            #     current_agent = handler_event.current_agent_name
-            #     print(f"\n{'='*20}")
-            #     print(f"🤖 Agent: {current_agent}")
-            #     print(f"{'='*20}\n")
+                if isinstance(handler_event, AgentOutput):
+                    if handler_event.response.content:
+                        print(f"{'='*20}\n")
+                        print("📤 Agent Output:", handler_event.response.content)
+                        print(f"{'='*20}\n")
+                    if handler_event.tool_calls:
+                        print(f"{'='*20}\n")
+                        print(
+                            "🛠️  Planning to use tools:",
+                            [call.tool_name for call in handler_event.tool_calls],
+                        )
+                        print(f"{'='*20}\n")
 
-            # elif isinstance(handler_event, AgentOutput):
-            # if isinstance(handler_event, AgentOutput):
-            #     if handler_event.response.content:
-            #         print(f"{'='*20}\n")
-            #         print("📤 Agent Output:", handler_event.response.content)
-            #         print(f"{'='*20}\n")
-            #     if handler_event.tool_calls:
-            #         print(f"{'='*20}\n")
-            #         print(
-            #             "🛠️  Planning to use tools:",
-            #             [call.tool_name for call in handler_event.tool_calls],
-            #         )
-            #         print(f"{'='*20}\n")
+                elif isinstance(handler_event, ToolCall):
+                    print(f"{'='*20}\n")
+                    print(f"🔨 Calling Tool: {handler_event.tool_name}\n")
+                    print(f"  With arguments: {handler_event.tool_kwargs}\n")
+                    print(f"{'='*20}\n")
 
-            # elif isinstance(handler_event, ToolCall):
-            #     print(f"{'='*20}\n")
-            #     print(f"🔨 Calling Tool: {handler_event.tool_name}\n")
-            #     print(f"  With arguments: {handler_event.tool_kwargs}\n")
-            #     print(f"{'='*20}\n")
-
-            # elif isinstance(handler_event, ToolCallResult):
-            #     print(f"🔧 Tool Call Result: ({handler_event.tool_name})\n")
-            #     print(f"  Arguments: {handler_event.tool_kwargs}\n")
-            #     print(f"  Output: {handler_event.tool_output}\n")
-            #     print(f"{'='*20}\n")
+                elif isinstance(handler_event, ToolCallResult):
+                    print(f"🔧 Tool Call Result: ({handler_event.tool_name})\n")
+                    print(f"  Arguments: {handler_event.tool_kwargs}\n")
+                    print(f"  Output: {handler_event.tool_output}\n")
+                    print(f"{'='*20}\n")
 
             # Get the final response
             response = await handler
@@ -220,7 +184,8 @@ class ProgressWorkflow(Workflow):
             raise WorkflowRuntimeError(exception_text)
 
         return FinalEvent(
-            message="format step is complete", response=str(formatted_response.raw)
+            # message="format step is complete", response=str(formatted_response.raw)
+            message="format step is complete", response=str(formatted_response.text)
         )
 
     @step
