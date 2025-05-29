@@ -85,6 +85,29 @@ class ProgressWorkflow(Workflow):
             raise WorkflowRuntimeError(exception_text)
 
         return ResearchEvent()
+    
+    @step
+    async def get_calendar_data_step(self, ctx: Context, event: ResearchEvent) -> ResearchEvent:
+        """Get calendar data and store it in the context"""
+
+        try:
+            ctx.write_event_to_stream(
+                ProgressEvent(
+                    type=ProgressEventType.CALENDAR_DATA_RETRIEVAL,
+                    message="Retrieving calendar data",
+                )
+            )
+
+
+            # ctx.set("meetings_state, {...})
+
+        except Exception as e:
+            exception_text = f"Error running {self.get_calendar_data_step.__name__}\n: {e}"
+            consoleLogger.error(exception_text)
+            timeFileLogger.error(exception_text)
+            raise WorkflowRuntimeError(exception_text)
+
+        return event
 
     @step
     async def research_step(self, ctx: Context, event: ResearchEvent) -> FormatEvent:
