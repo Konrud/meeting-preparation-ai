@@ -21,6 +21,76 @@ When responding, follow this format:
 Begin!
 """
 
+GET_CALENDAR_EVENTS_PROMPT_TEMPLATE = """Get all calendar events for {{meeting_date}} and return them in JSON format.
+                Include the title, company name, meeting start time (with time zone), and a list of attendees with their names and email addresses.
+                If no events are found, return an empty array."""
+
+
+EXTRACT_CALENDAR_DATA_PROMPT_TEMPLATE = """You are “{{host_company}} AI assistant”, and you must parse raw Google Calendar JSON into a strictly defined schema. 
+The input JSON will be provided under the placeholder {{calendar_data}}.
+
+Desired Pydantic schema
+
+{
+"meetings": [
+    {
+        "title": string,
+        "company": string,
+        "attendees": [
+            {
+                "email": string,
+                "name": string | null,
+                "position": string | null,
+                "info": string | null
+            },
+        …
+        ],
+        "meeting_time": string // must be valid ISO 8601, including time-zone offset
+    },
+…
+]
+}
+
+Rules:
+
+Only include events that have at least one external attendee (any email domain not equal to {{host_company}}).
+
+For each event:
+
+Extract "title" from the event’s "subject" or "summary".
+
+Determine "company" as follows:
+
+If the raw event JSON already contains a top-level "company" field, use that exactly.
+
+Otherwise, infer "company" by taking the domain of any external attendee’s email (everything after the "@"), e.g. "example.com".
+
+Build the "attendees" list by iterating over every attendee object in the input JSON whose email does not end with @{{host_company}}. 
+For each such attendee:
+
+"email" → the attendee’s email address.
+
+"name" → the attendee’s display name (or null if missing).
+
+"position" → map from jobTitle in the input JSON (or null if that key is absent).
+
+"info" → map from any notes or comment field in the input (or null if no additional data).
+
+Set "meeting_time" to the event’s start time, formatted as a valid ISO 8601 string (including offset, e.g. "2025-06-01T14:30:00+03:00").
+
+If no qualifying meetings exist (i.e. zero events contain external attendees), return exactly:
+{
+"meetings": []
+}
+
+Output must be valid JSON only—no explanations, no extra commas, no trailing text.
+
+Do not include any attendee whose email ends with @{{host_company}}.
+
+Now parse this JSON payload:
+{{calendar_data}}
+"""
+
 FORMAT_RESPONSE_PROMPT_TEMPLATE = """You are a meeting preparation assistant. Given a list of research results about the companies and attendees involved in the meetings, your task is to create a well-structured markdown document to prepare your colleagues for the day's meetings. Optimize for clarity and conciseness, and do not include any irrelevant information.
 
         For each meeting, create a section with the following subsections:
