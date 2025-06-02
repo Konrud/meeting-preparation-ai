@@ -40,8 +40,15 @@ class FormatEvent(Event):
 
 
 class ResearchEvent(Event):
-    attendees: List[str] = Field(
+    calendar_events: Optional[List[str]] = Field(
+        default_factory=list,
+        description="List of calendar events retrieved from the calendar data",
+    )
+
+    attendees: Optional[List[str]] = Field(
         default_factory=list,
         description="List of attendees for the meeting",
     )
-    company: str = Field(description="Company name for the meeting")
+    company: Optional[str] = Field(
+        default=None, description="Company name for the meeting"
+    )

@@ -40,7 +40,7 @@ Desired Pydantic schema
             {
                 "email": string,
                 "name": string | null,
-                "position": string | null,
+                "role": string | null,
                 "info": string | null
             },
         …
@@ -72,7 +72,7 @@ For each such attendee:
 
 "name" → the attendee’s display name (or null if missing).
 
-"position" → map from jobTitle in the input JSON (or null if that key is absent).
+"role" → the attendee’s role in the company (or null if missing).
 
 "info" → map from any notes or comment field in the input (or null if no additional data).
 
@@ -102,7 +102,7 @@ FORMAT_RESPONSE_PROMPT_TEMPLATE = """You are a meeting preparation assistant. Gi
         - **Background:** [any relevant background information about the meeting or the relationship with the company, if available]
 
         - ### Company Information
-        - [key facts about the company, such as industry, size, recent news, etc., from the research results]
+        - [key facts about the company, such as industry, main product, size, recent news, etc., from the research results]
 
         - ### Attendees
         - #### [Attendee Name]
@@ -126,11 +126,11 @@ FORMAT_RESPONSE_PROMPT_TEMPLATE = """You are a meeting preparation assistant. Gi
 """
 
 
-REACT_AGENT_USER_PROMPT_TEMPLATE = """Your goal is to help me prepare for an upcoming meeting by gathering information about the attendees and the company we are meeting with.
+REACT_AGENT_USER_PROMPT_TEMPLATE = """Your goal is to help me prepare for an upcoming meetings by gathering information about the attendees and the company we are meeting with.
 
-            You will be provided with the following meeting information:
+            You will be provided with the following meetings information:
 
-            {{meeting_info}}
+            {{meetings_info}}
 
             Please perform the following tasks, using available tools {{tools}}:
 
@@ -152,4 +152,7 @@ REACT_AGENT_USER_PROMPT_TEMPLATE = """Your goal is to help me prepare for an upc
             4. If you are unable to find the profile of any attendee or information about the company, clearly state which information was not found and suggest possible reasons or alternative approaches.
 
             Do not include anything else in the output besides the requested summaries and links.
+            
+            Do this for each meeting in the provided meetings information.
+            {{meetings_info}}
             """

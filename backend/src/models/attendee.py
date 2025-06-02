@@ -9,9 +9,9 @@ class Attendee(BaseModel):
     name: Optional[str] = Field(
         description="Name of the attendee",
     )
-    position: Optional[str] = Field(
+    role: Optional[str] = Field(
         default=None,
-        description="Position of the attendee in the company",
+        description="Role of the attendee in the company",
     )
     info: Optional[str] = Field(
         default=None,

@@ -1,5 +1,7 @@
+import json
 import os
 from datetime import datetime
+from typing import List
 from dotenv import load_dotenv
 from llama_index.core import set_global_handler
 
@@ -203,13 +205,6 @@ class ProgressWorkflow(Workflow):
             if not calendar_data:
                 raise ValueError("No calendar data found.")
 
-            # Extract meeting information from the calendar data
-            # meeting_info = {
-            #     "date": calendar_data.get("date"),
-            #     "attendees": calendar_data.get("attendees", []),
-            #     "company": calendar_data.get("company"),
-            # }
-
             extract_calendar_data_prompt_raw = RichPromptTemplate(
                 template_str=EXTRACT_CALENDAR_DATA_PROMPT_TEMPLATE
             )
@@ -223,9 +218,11 @@ class ProgressWorkflow(Workflow):
                 CalendarData, extract_calendar_data_prompt
             )
 
-            meeting_info = response_as_pydantic_obj
+            calendar_data_item = response_as_pydantic_obj
 
-            for meeting in meeting_info.meetings:
+            calendar_events = []
+
+            for meeting in calendar_data_item.meetings:
                 # Convert datetime ISO 8601 to "Hour:Minute AM/PM" format
                 if meeting.meeting_time:
                     # Parse the ISO formatted string into a datetime object
@@ -236,10 +233,26 @@ class ProgressWorkflow(Workflow):
                     formatted_time = dt_object.strftime("%I:%M %p")
                     meeting.meeting_time = formatted_time
 
-                # !CONTINUE FROM HERE
+                # company = meeting.company
+
+                # event_data = {
+                #     "company": company,
+                #     "title": meeting.title,
+                #     "attendees": {},
+                #     "meeting_time": meeting.meeting_time,
+                # }
+                ctx.write_event_to_stream(
+                    ProgressEvent(
+                        type=ProgressEventType.CALENDAR_EVENT,
+                        message="Processing calendar event: "
+                        f"{meeting.title} at {meeting.meeting_time} with {len(meeting.attendees)} attendees",
+                    )
+                )
+
+                calendar_events.append(meeting.model_dump_json())
 
             # Store the meeting information in the context
-            await ctx.set("meeting_info", meeting_info)
+            # await ctx.set("meeting_info", meeting_info)
 
         except Exception as e:
             exception_text = (
@@ -249,9 +262,7 @@ class ProgressWorkflow(Workflow):
             timeFileLogger.error(exception_text)
             raise WorkflowRuntimeError(exception_text)
 
-        return ResearchEvent(
-            attendees=meeting_info["attendees"], company=meeting_info["company"]
-        )
+        return ResearchEvent(calendar_events=calendar_events)
 
     @step
     async def research_step(self, ctx: Context, event: ResearchEvent) -> FormatEvent:
@@ -260,29 +271,49 @@ class ProgressWorkflow(Workflow):
         try:
             ctx.write_event_to_stream(
                 ProgressEvent(
-                    type=ProgressEventType.PROCESSING, message="ReAct agent is running"
+                    type=ProgressEventType.RESEARCH,
+                    message="Research step is running",
                 )
             )
 
             search_prompt_raw = RichPromptTemplate(REACT_AGENT_USER_PROMPT_TEMPLATE)
 
-            meeting_info = await ctx.get("meeting_info")
+            # meeting_info = await ctx.get("meeting_info")
 
-            if not meeting_info:
-                raise ValueError("Meeting information is not available in the context.")
+            # if not meeting_info:
+            #     raise ValueError("Meeting information is not available in the context.")
+
+            # search_prompt = search_prompt_raw.format(
+            #     meeting_info=meeting_info,
+            #     # tools=[search_web_tool[0].metadata.name]
+            #     tools=[search_web_tool.metadata.name],
+            # )
+
+            # calendar_events: List[str] = []
+
+            if not event.calendar_events and event.attendees and event.company:
+                calendar_event = {
+                    "attendees": event.attendees,
+                    "company": event.company,
+                }
+                calendar_events = [json.dumps(calendar_event)]
+
+            elif event.calendar_events:
+                calendar_events = event.calendar_events
+
+            else:
+                raise ValueError(
+                    "either attendees and company name or calendar events must be provided."
+                )
 
             search_prompt = search_prompt_raw.format(
-                meeting_info=meeting_info,
-                # tools=[search_web_tool[0].metadata.name]
+                meetings_info=calendar_events,
                 tools=[search_web_tool.metadata.name],
             )
 
             handler = self.agent.run(
                 user_msg=search_prompt,
-                # ctx=ctx,
             )
-
-            # current_agent = None
 
             async for handler_event in handler.stream_events():
 
