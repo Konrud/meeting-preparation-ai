@@ -25,8 +25,8 @@ from src.events import (
     ProgressWorkflowStartEvent,
     ResearchEvent,
 )
-from .models.calendar_data import CalendarData
-from .models.meeting import Meeting
+from src.models.calendar_data import CalendarData
+from src.models.meeting import Meeting
 from src.prompts import (
     EXTRACT_CALENDAR_DATA_PROMPT_TEMPLATE,
     FORMAT_RESPONSE_PROMPT_TEMPLATE,
@@ -36,6 +36,7 @@ from src.prompts import (
 )
 from src.tools import search_web_tool
 from llama_index.core.tools import FunctionTool, ToolMetadata
+from llama_index.tools.mcp import BasicMCPClient, aget_tools_from_mcp_url
 from utils.logger import consoleLogger, timeFileLogger
 from llama_index.llms.azure_openai import AzureOpenAI
 
@@ -150,6 +151,11 @@ class ProgressWorkflow(Workflow):
                     }
                 },
             }
+
+            # https://docs.llamaindex.ai/en/stable/examples/tools/mcp/
+            # async
+            tools = await aget_tools_from_mcp_url("http://127.0.0.1:8000/mcp")
+            # ! CONTINUE HERE
 
             # Create MCPClient from the config dictionary
             mcp_client = MCPClient.from_dict(google_calendar_mcp_config)
