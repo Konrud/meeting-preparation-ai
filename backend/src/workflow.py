@@ -1,3 +1,4 @@
+from importlib.metadata import requires
 import json
 import os
 from datetime import datetime
@@ -5,7 +6,7 @@ from typing import List
 from dotenv import load_dotenv
 from llama_index.core import set_global_handler
 
-from llama_index.core.agent.workflow import ReActAgent
+from llama_index.core.agent.workflow import FunctionAgent, ReActAgent
 from llama_index.core.workflow import StartEvent, StopEvent, Workflow, step, Context
 from llama_index.core.agent.workflow import (
     AgentOutput,
@@ -36,7 +37,7 @@ from src.prompts import (
 )
 from src.tools import search_web_tool
 from llama_index.core.tools import FunctionTool, ToolMetadata
-from llama_index.tools.mcp import BasicMCPClient, aget_tools_from_mcp_url
+from llama_index.tools.mcp import BasicMCPClient, McpToolSpec, aget_tools_from_mcp_url
 from utils.logger import consoleLogger, timeFileLogger
 from llama_index.llms.azure_openai import AzureOpenAI
 
@@ -143,24 +144,54 @@ class ProgressWorkflow(Workflow):
             )
 
             # For now we will be using Google Calendar API to get the meeting info
-            google_calendar_mcp_config = {
-                "mcpServers": {
-                    "google_calendar": {
-                        "command": "node",
-                        "args": [os.getenv("GOOGLE_CALENDAR_MCP_CONFIG", "")],
-                    }
-                },
-            }
+            # google_calendar_mcp_config = {
+            #     "mcpServers": {
+            #         "google_calendar": {
+            #             "command": "node",
+            #             "args": [os.getenv("GOOGLE_CALENDAR_MCP_CONFIG", "")],
+            #         }
+            #     },
+            # }
 
             # https://docs.llamaindex.ai/en/stable/examples/tools/mcp/
             # async
-            tools = await aget_tools_from_mcp_url("http://127.0.0.1:8000/mcp")
-            # ! CONTINUE HERE
+            # tools = await aget_tools_from_mcp_url("http://127.0.0.1:8000/mcp")
+
+            # 1. Get the project root directory
+            project_root = os.path.abspath(
+                os.path.join(
+                    os.path.dirname(__file__),  # backend/src
+                    os.pardir,  # → backend
+                    os.pardir,  # → project-root
+                )
+            )
+
+            # 2. join to google-calendar-mcp/build/index.js
+            google_calendar_mcp_path = os.path.join(
+                project_root, "google-calendar-mcp", "build", "index.js"
+            )
+
+            local_client = BasicMCPClient(
+                "node", args=[google_calendar_mcp_path]
+            )  # stdio
+
+            # tools = local_client.list_tools()
+
+            mcp_tool_spec = McpToolSpec(client=local_client)
+            tools = await mcp_tool_spec.to_tool_list_async()
+
+            mcp_agent = ReActAgent(
+                name="MCP Agent",
+                description="Agent using MCP tools.",
+                tools=tools,
+                llm=self.model,
+                system_prompt="You are an AI assistant with access to MCP tools.",
+            )
 
             # Create MCPClient from the config dictionary
-            mcp_client = MCPClient.from_dict(google_calendar_mcp_config)
+            # mcp_client = MCPClient.from_dict(google_calendar_mcp_config)
 
-            mcp_agent = MCPAgent(llm=self.model, client=mcp_client, max_steps=30)
+            # mcp_agent = MCPAgent(llm=self.model, client=mcp_client, max_steps=30)
 
             meeting_date = event.date
 
@@ -190,7 +221,7 @@ class ProgressWorkflow(Workflow):
             timeFileLogger.error(exception_text)
             raise WorkflowRuntimeError(exception_text)
 
-        return CalendarDataParserEvent(calendar_data=calendar_data)
+        return CalendarDataParserEvent(calendar_data=calendar_data.response.content)
 
     @step
     async def calendar_data_parser_step(
