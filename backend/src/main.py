@@ -1,14 +1,14 @@
 import os
 from dotenv import load_dotenv
+import json
 from utils.logger import consoleLogger, timeFileLogger
 from fastapi import Request
-import json
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from llama_index.core.workflow import Context
 from src.workflow import ProgressWorkflow
-from src.events import ProgressEvent
+from src.events import ProgressEvent, ProgressWorkflowStartEvent
 
 # Load environment variables
 load_dotenv()
@@ -23,6 +23,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 @app.post("/api/run-workflow")
 async def run_workflow_endpoint(request: Request):
@@ -42,37 +43,40 @@ async def run_workflow_endpoint(request: Request):
 
         company = payload.get("company", mock_company_name)
         attendees = payload.get("attendees", mock_attendees)
+        date = payload.get("date", "2025-06-15")
 
         # Context
         ctx = Context(workflow=progress_workflow)
 
         await ctx.set("meeting_info", {"company": company, "attendees": attendees})
 
-        workflow_handler = progress_workflow.run(ctx=ctx)
+        workflow_handler = progress_workflow.run(
+            ctx=ctx,
+            start_event=ProgressWorkflowStartEvent(date=date),
+        )
 
         # Async generator to yield events to the frontend
         async def event_generator():
 
             async for event in workflow_handler.stream_events():
-             
-             if isinstance(event, ProgressEvent):
-                  print(f"\n{'=' * 20}") 
-                  print(f"Progress event: {event.message=}\n")
-                  yield json.dumps({
-                        "type": "progress",
-                        "data": {
-                            "type": event.type.value,
-                            "message": event.message
-                        }
-                    }) + "\n"
-                
-            # Yield the final result after all progress events
-            final_result = await workflow_handler 
 
-            yield json.dumps({
-                "type": "final",
-                "data": final_result
-            }) + "\n"
+                if isinstance(event, ProgressEvent):
+                    print(f"\n{'=' * 20}")
+                    print(f"Progress event: {event.message=}\n")
+                    yield json.dumps(
+                        {
+                            "type": "progress",
+                            "data": {
+                                "type": event.type.value,
+                                "message": event.message,
+                            },
+                        }
+                    ) + "\n"
+
+            # Yield the final result after all progress events
+            final_result = await workflow_handler
+
+            yield json.dumps({"type": "final", "data": final_result}) + "\n"
 
         debug333 = 333
 
@@ -84,6 +88,8 @@ async def run_workflow_endpoint(request: Request):
         timeFileLogger.error(exception_text)
         raise HTTPException(status_code=500, detail=str(e))
 
+
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=5000)
