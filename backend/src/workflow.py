@@ -40,6 +40,7 @@ from llama_index.core.tools import FunctionTool, ToolMetadata
 from llama_index.tools.mcp import BasicMCPClient, McpToolSpec, aget_tools_from_mcp_url
 from utils.logger import consoleLogger, timeFileLogger
 from llama_index.llms.azure_openai import AzureOpenAI
+from llama_index.core.program import LLMTextCompletionProgram
 
 # Load environment variables
 load_dotenv()
@@ -184,6 +185,7 @@ class ProgressWorkflow(Workflow):
                 name="MCP Agent",
                 description="Agent using MCP tools.",
                 tools=tools,
+                # llm=self.model.as_structured_llm(output_cls=CalendarData),
                 llm=self.model,
                 system_prompt="You are an AI assistant with access to MCP tools.",
             )
@@ -205,7 +207,10 @@ class ProgressWorkflow(Workflow):
                 template_str=GET_CALENDAR_EVENTS_PROMPT_TEMPLATE
             )
 
-            mcp_agent_prompt = mcp_agent_prompt_raw.format(meeting_date=meeting_date)
+            mcp_agent_prompt = mcp_agent_prompt_raw.format(
+                meeting_date=meeting_date,
+                output_schema=Meeting.model_json_schema(),
+            )
 
             # calendar_data = await mcp_agent.run(f"What is on my calendar for {date}. Include the meeting title, time, and the attendees - names and emails.")
             calendar_data = await mcp_agent.run(mcp_agent_prompt)
@@ -248,12 +253,28 @@ class ProgressWorkflow(Workflow):
 
             extract_calendar_data_prompt = extract_calendar_data_prompt_raw.format(
                 calendar_data=calendar_data,
+                # calendar_data,
                 host_company=os.getenv("MOCK_HOST_COMPANY_NAME", "gmail"),
             )
 
-            response_as_pydantic_obj: CalendarData = self.model.structured_predict(
-                CalendarData, extract_calendar_data_prompt
+            # structured_model = self.model.as_structured_llm(output_cls=Meeting)
+
+            # response_as_pydantic_obj = structured_model.complete(
+            #     prompt=extract_calendar_data_prompt
+            # )
+
+            program = LLMTextCompletionProgram.from_defaults(
+                output_cls=CalendarData,
+                llm=self.model,
+                prompt_template_str=extract_calendar_data_prompt,
+                verbose=True,
             )
+
+            response_as_pydantic_obj = program()
+
+            # response_as_pydantic_obj: CalendarData = self.model.structured_predict(
+            #     CalendarData, extract_calendar_data_prompt
+            # )
 
             calendar_data_item = response_as_pydantic_obj
 
