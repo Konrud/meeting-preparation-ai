@@ -1,6 +1,7 @@
 import json
 import os
 from datetime import datetime
+from typing import List
 from dotenv import load_dotenv
 from llama_index.core import set_global_handler
 
@@ -14,6 +15,7 @@ from llama_index.core.agent.workflow import (
 from llama_index.core.workflow.errors import WorkflowRuntimeError
 from llama_index.core.prompts import RichPromptTemplate
 from azure.identity import DefaultAzureCredential, get_bearer_token_provider
+from llama_index.core.workflow.handler import WorkflowHandler
 from src.enums import ProgressEventType
 from src.events import (
     CalendarDataParserEvent,
@@ -30,7 +32,8 @@ from src.prompts import (
     EXTRACT_CALENDAR_DATA_PROMPT_TEMPLATE,
     FORMAT_RESPONSE_PROMPT_TEMPLATE,
     GET_CALENDAR_EVENTS_PROMPT_TEMPLATE,
-    REACT_AGENT_USER_PROMPT_TEMPLATE,
+    RESEARCH_ATTENDEES_PROMPT_TEMPLATE,
+    RESEARCH_COMPANY_PROMPT_TEMPLATE,
 )
 from src.tools import search_web_tool
 from llama_index.tools.mcp import BasicMCPClient, McpToolSpec
@@ -40,6 +43,35 @@ from llama_index.core.program import LLMTextCompletionProgram
 
 # Load environment variables
 load_dotenv()
+
+
+# UTILITIES
+async def stream_events(handler: WorkflowHandler):
+    async for handler_event in handler.stream_events():
+        if isinstance(handler_event, AgentOutput):
+            if handler_event.response.content:
+                print(f"{'='*20}\n")
+                print("📤 Agent Output:", handler_event.response.content)
+                print(f"{'='*20}\n")
+            if handler_event.tool_calls:
+                print(f"{'='*20}\n")
+                print(
+                    "🛠️  Planning to use tools:",
+                    [call.tool_name for call in handler_event.tool_calls],
+                )
+                print(f"{'='*20}\n")
+
+        elif isinstance(handler_event, ToolCall):
+            print(f"{'='*20}\n")
+            print(f"🔨 Calling Tool: {handler_event.tool_name}\n")
+            print(f"  With arguments: {handler_event.tool_kwargs}\n")
+            print(f"{'='*20}\n")
+
+        elif isinstance(handler_event, ToolCallResult):
+            print(f"🔧 Tool Call Result: ({handler_event.tool_name})\n")
+            print(f"  Arguments: {handler_event.tool_kwargs}\n")
+            print(f"  Output: {handler_event.tool_output}\n")
+            print(f"{'='*20}\n")
 
 
 class ProgressWorkflow(Workflow):
@@ -265,9 +297,9 @@ class ProgressWorkflow(Workflow):
             #     CalendarData, extract_calendar_data_prompt
             # )
 
-            calendar_data_item = response_as_pydantic_obj
+            calendar_data_item: CalendarData = response_as_pydantic_obj
 
-            calendar_events = []
+            calendar_events: List[Meeting] = []
 
             for meeting in calendar_data_item.meetings:
                 # Convert datetime ISO 8601 to "Hour:Minute AM/PM" format
@@ -280,14 +312,6 @@ class ProgressWorkflow(Workflow):
                     formatted_time = dt_object.strftime("%I:%M %p")
                     meeting.meeting_time = formatted_time
 
-                # company = meeting.company
-
-                # event_data = {
-                #     "company": company,
-                #     "title": meeting.title,
-                #     "attendees": {},
-                #     "meeting_time": meeting.meeting_time,
-                # }
                 ctx.write_event_to_stream(
                     ProgressEvent(
                         type=ProgressEventType.CALENDAR_EVENT,
@@ -296,10 +320,8 @@ class ProgressWorkflow(Workflow):
                     )
                 )
 
-                calendar_events.append(meeting.model_dump_json())
-
-            # Store the meeting information in the context
-            # await ctx.set("meeting_info", meeting_info)
+                # calendar_events.append(meeting.model_dump_json())
+                calendar_events.append(meeting)
 
         except Exception as e:
             exception_text = (
@@ -328,7 +350,9 @@ class ProgressWorkflow(Workflow):
                     "attendees": event.attendees,
                     "company": event.company,
                 }
-                calendar_events = [json.dumps(calendar_event)]
+                calendar_events = [
+                    Meeting(title="UNKNOWN", meeting_time="UNKNOWN", **calendar_event)
+                ]
 
             elif event.calendar_events:
                 calendar_events = event.calendar_events
@@ -340,49 +364,125 @@ class ProgressWorkflow(Workflow):
 
             all_responses = []
 
-            for calendar_event in calendar_events:
-                search_prompt_raw = RichPromptTemplate(REACT_AGENT_USER_PROMPT_TEMPLATE)
+            # for calendar_event in calendar_events:
+            #     search_prompt_raw = RichPromptTemplate(REACT_AGENT_USER_PROMPT_TEMPLATE)
 
-                search_prompt = search_prompt_raw.format(
-                    meeting_info=calendar_event,
+            #     search_prompt = search_prompt_raw.format(
+            #         meeting_info=calendar_event,
+            #         tools=[search_web_tool.metadata.name],
+            #     )
+
+            #     handler = self.agent.run(
+            #         user_msg=search_prompt,
+            #     )
+
+            #     async for handler_event in handler.stream_events():
+
+            #         if isinstance(handler_event, AgentOutput):
+            #             if handler_event.response.content:
+            #                 print(f"{'='*20}\n")
+            #                 print("📤 Agent Output:", handler_event.response.content)
+            #                 print(f"{'='*20}\n")
+            #             if handler_event.tool_calls:
+            #                 print(f"{'='*20}\n")
+            #                 print(
+            #                     "🛠️  Planning to use tools:",
+            #                     [call.tool_name for call in handler_event.tool_calls],
+            #                 )
+            #                 print(f"{'='*20}\n")
+
+            #         elif isinstance(handler_event, ToolCall):
+            #             print(f"{'='*20}\n")
+            #             print(f"🔨 Calling Tool: {handler_event.tool_name}\n")
+            #             print(f"  With arguments: {handler_event.tool_kwargs}\n")
+            #             print(f"{'='*20}\n")
+
+            #         elif isinstance(handler_event, ToolCallResult):
+            #             print(f"🔧 Tool Call Result: ({handler_event.tool_name})\n")
+            #             print(f"  Arguments: {handler_event.tool_kwargs}\n")
+            #             print(f"  Output: {handler_event.tool_output}\n")
+            #             print(f"{'='*20}\n")
+
+            #     # Get the final response
+            #     response = await handler
+            #     all_responses.append(str(response))
+            #     print(f"\n===\nresponse: {str(response)}\n===\n")
+
+            #   RUN TASK IN PARALLEL
+            #         tasks = [create_item(container_name, item) for item in processed_items]
+            #  results = await asyncio.gather(*tasks, return_exceptions=True)
+
+            for calendar_event in calendar_events:
+                company_search_prompt_raw = RichPromptTemplate(
+                    RESEARCH_COMPANY_PROMPT_TEMPLATE
+                )
+
+                company_search_prompt = company_search_prompt_raw.format(
+                    meeting_info=calendar_event.model_dump_json(),
                     tools=[search_web_tool.metadata.name],
                 )
 
-                handler = self.agent.run(
-                    user_msg=search_prompt,
+                company_handler: WorkflowHandler = self.agent.run(
+                    user_msg=company_search_prompt,
                 )
 
-                async for handler_event in handler.stream_events():
+                # COMPANY STREAM EVENTS
+                await stream_events(company_handler)
 
-                    if isinstance(handler_event, AgentOutput):
-                        if handler_event.response.content:
-                            print(f"{'='*20}\n")
-                            print("📤 Agent Output:", handler_event.response.content)
-                            print(f"{'='*20}\n")
-                        if handler_event.tool_calls:
-                            print(f"{'='*20}\n")
-                            print(
-                                "🛠️  Planning to use tools:",
-                                [call.tool_name for call in handler_event.tool_calls],
-                            )
-                            print(f"{'='*20}\n")
+                # Get the final response for company
+                company_response = await company_handler
+                # all_responses.append(str(company_response))
+                print(f"\n===\ncompany_response: {str(company_response)}\n===\n")
 
-                    elif isinstance(handler_event, ToolCall):
-                        print(f"{'='*20}\n")
-                        print(f"🔨 Calling Tool: {handler_event.tool_name}\n")
-                        print(f"  With arguments: {handler_event.tool_kwargs}\n")
-                        print(f"{'='*20}\n")
+                # ----- ATTENDEES -----#
 
-                    elif isinstance(handler_event, ToolCallResult):
-                        print(f"🔧 Tool Call Result: ({handler_event.tool_name})\n")
-                        print(f"  Arguments: {handler_event.tool_kwargs}\n")
-                        print(f"  Output: {handler_event.tool_output}\n")
-                        print(f"{'='*20}\n")
+                attendees_search_prompt_raw = RichPromptTemplate(
+                    RESEARCH_ATTENDEES_PROMPT_TEMPLATE
+                )
 
-                # Get the final response
-                response = await handler
-                all_responses.append(str(response))
-                print(f"\n===\nresponse: {str(response)}\n===\n")
+                attendees_search_prompt = attendees_search_prompt_raw.format(
+                    meeting_info=calendar_event.model_dump_json(),
+                    tools=[search_web_tool.metadata.name],
+                )
+
+                attendees_handler: WorkflowHandler = self.agent.run(
+                    user_msg=attendees_search_prompt,
+                )
+
+                # ATTENDEES STREAM EVENTS
+                await stream_events(attendees_handler)
+
+                # Get the final response for attendees
+                attendees_response = await attendees_handler
+
+                calendar_event_response_entry = "\n".join(
+                    [str(company_response), str(attendees_response)]
+                )
+
+                all_responses.append(str(calendar_event_response_entry))
+                print(f"\n===\nattendees_response: {str(attendees_response)}\n===\n")
+
+                # for attendee in calendar_event.attendees:
+
+                #     attendees_search_prompt_raw = RichPromptTemplate(
+                #         RESEARCH_ATTENDEES_PROMPT_TEMPLATE
+                #     )
+
+                #     attendees_search_prompt = attendees_search_prompt_raw.format(
+                #         meeting_info=calendar_event,
+                #         tools=[search_web_tool.metadata.name],
+                #     )
+
+                #     handler: WorkflowHandler = self.agent.run(
+                #         user_msg=attendees_search_prompt,
+                #     )
+
+                #     await stream_events(handler)
+
+                #     # Get the final response
+                #     response = await handler
+                #     all_responses.append(str(response))
+                #     print(f"\n===\nresponse: {str(response)}\n===\n")
 
             combined_response = "\n\n".join(all_responses)
             print(f"\n===\nCombined Response:\n{combined_response}\n===\n")

@@ -175,11 +175,66 @@ FORMAT_RESPONSE_PROMPT_TEMPLATE = """You are a meeting preparation assistant. Gi
 """
 
 
-REACT_AGENT_USER_PROMPT_TEMPLATE = """Your goal is to help me prepare for an upcoming meeting by gathering information about the attendees and the company we are meeting with.
+# REACT_AGENT_USER_PROMPT_TEMPLATE = """Your goal is to help me prepare for an upcoming meeting by gathering information about the attendees and the company we are meeting with.
+
+#             You will be provided with a meeting information template that includes the company name,
+#             a list of attendees with their details, and the date of the meeting.
+#             Your task is to research each attendee's professional profile and the company's information to help us understand who we are meeting with and what they do.
+
+#             Please perform the following tasks, using available tools {{tools}}:
+
+#             1. Find the professional profiles (e.g., LinkedIn) of each attendee.
+#             - Use all available information such as their full name, email, initials, last name, and the company they work for to accurately identify the correct profiles.
+#             - If there are multiple people with the same name, focus on the one who works at the specified company.
+#             - For each attendee, provide details on their role, education, experience, and location.
+#             - It is crucial to find the profiles of all attendees. If you cannot find a profile initially, try different search strategies or combinations of the available information.
+
+#             2. Research the company's information.
+#             - Look for recent news articles, press releases, the company’s official website, or any public statements about their main product, their overview, and their specialties.
+#             - Focus on their current projects, partnerships, investments, or any significant developments in AI.
+
+#             3. Summarize your findings concisely.
+#             - For each attendee, provide a brief summary of their profile information and include the link to their profile (e.g. LinkedIn).
+#             - For the company, provide a summary of their AI initiatives with relevant links to the sources.
+#             - Ensure the summary is clear and directly relevant to the meeting preparation.
+
+#             4. If you are unable to find the profile of any attendee or information about the company, clearly state which information was not found and suggest possible reasons or alternative approaches.
+
+#             Do not include anything else in the output besides the requested summaries and links.
+
+#             Do this for the following meeting:
+#             {{meeting_info}}
+#             """
+
+
+RESEARCH_COMPANY_PROMPT_TEMPLATE = """Your goal is to help me prepare for an upcoming meeting by gathering information about the company we are meeting with.
+
+            You will be provided with a meeting information template that includes the company name, and the date of the meeting. 
+            Your task is to research the company's information to help us understand who we are meeting with and what they do.
+
+            Please perform the following tasks, using available tools {{tools}}:
+
+            1. Research the company's information.
+            - Look for recent news articles, press releases, the company’s official website, or any public statements about their main product, their overview, and their specialties.
+            - Focus on their current projects, partnerships, investments, or any significant developments in AI.
+
+            2. Summarize your findings concisely.
+            - For the company, provide a summary of their AI initiatives with relevant links to the sources.
+            - Ensure the summary is clear and directly relevant to the meeting preparation.
+
+            4. If you are unable to find information about the company, clearly state which information was not found and suggest possible reasons or alternative approaches.
+
+            Do not include anything else in the output besides the requested summaries and links.
+            
+            Do this for the following meeting:
+            {{meeting_info}}
+            """
+
+RESEARCH_ATTENDEES_PROMPT_TEMPLATE = """Your goal is to help me prepare for an upcoming meeting by gathering information about the attendees we are meeting with.
 
             You will be provided with a meeting information template that includes the company name, 
             a list of attendees with their details, and the date of the meeting. 
-            Your task is to research each attendee's professional profile and the company's information to help us understand who we are meeting with and what they do.
+            Your task is to research each attendee's professional profile to help us understand who we are meeting with and what they do.
 
             Please perform the following tasks, using available tools {{tools}}:
 
@@ -189,16 +244,11 @@ REACT_AGENT_USER_PROMPT_TEMPLATE = """Your goal is to help me prepare for an upc
             - For each attendee, provide details on their role, education, experience, and location.
             - It is crucial to find the profiles of all attendees. If you cannot find a profile initially, try different search strategies or combinations of the available information.
 
-            2. Research the company's information.
-            - Look for recent news articles, press releases, the company’s official website, or any public statements about their main product, their overview, and their specialties.
-            - Focus on their current projects, partnerships, investments, or any significant developments in AI.
-
-            3. Summarize your findings concisely.
+            2. Summarize your findings concisely.
             - For each attendee, provide a brief summary of their profile information and include the link to their profile (e.g. LinkedIn).
-            - For the company, provide a summary of their AI initiatives with relevant links to the sources.
             - Ensure the summary is clear and directly relevant to the meeting preparation.
 
-            4. If you are unable to find the profile of any attendee or information about the company, clearly state which information was not found and suggest possible reasons or alternative approaches.
+            4. If you are unable to find the profile of any attendee, clearly state which information was not found and suggest possible reasons or alternative approaches.
 
             Do not include anything else in the output besides the requested summaries and links.
             
