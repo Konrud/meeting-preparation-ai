@@ -2,6 +2,7 @@ from typing import List, Optional
 from llama_index.core.workflow import Event, StartEvent
 from pydantic import Field
 from src.enums import ProgressEventType
+from src.models.meeting import Meeting
 
 
 class ProgressWorkflowStartEvent(StartEvent):
@@ -40,7 +41,11 @@ class FormatEvent(Event):
 
 
 class ResearchEvent(Event):
-    calendar_events: Optional[List[str]] = Field(
+    # calendar_events: Optional[List[str]] = Field(
+    #     default_factory=list,
+    #     description="List of calendar events retrieved from the calendar data",
+    # )
+    calendar_events: Optional[List[Meeting]] = Field(
         default_factory=list,
         description="List of calendar events retrieved from the calendar data",
     )
