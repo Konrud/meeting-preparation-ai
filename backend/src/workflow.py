@@ -1,13 +1,11 @@
-from importlib.metadata import requires
 import json
 import os
 from datetime import datetime
-from typing import List
 from dotenv import load_dotenv
 from llama_index.core import set_global_handler
 
-from llama_index.core.agent.workflow import FunctionAgent, ReActAgent
-from llama_index.core.workflow import StartEvent, StopEvent, Workflow, step, Context
+from llama_index.core.agent.workflow import ReActAgent
+from llama_index.core.workflow import StopEvent, Workflow, step, Context
 from llama_index.core.agent.workflow import (
     AgentOutput,
     ToolCall,
@@ -32,12 +30,10 @@ from src.prompts import (
     EXTRACT_CALENDAR_DATA_PROMPT_TEMPLATE,
     FORMAT_RESPONSE_PROMPT_TEMPLATE,
     GET_CALENDAR_EVENTS_PROMPT_TEMPLATE,
-    REACT_AGENT_SYSTEM_PROMPT_TEMPLATE,
     REACT_AGENT_USER_PROMPT_TEMPLATE,
 )
 from src.tools import search_web_tool
-from llama_index.core.tools import FunctionTool, ToolMetadata
-from llama_index.tools.mcp import BasicMCPClient, McpToolSpec, aget_tools_from_mcp_url
+from llama_index.tools.mcp import BasicMCPClient, McpToolSpec
 from utils.logger import consoleLogger, timeFileLogger
 from llama_index.llms.azure_openai import AzureOpenAI
 from llama_index.core.program import LLMTextCompletionProgram
@@ -73,10 +69,8 @@ class ProgressWorkflow(Workflow):
         self.agent = ReActAgent(
             name="searchAgent",
             description="Searches the web for the given query and returns the result.",
-            # tools=search_web_tool,
             tools=[search_web_tool],
             llm=self.model,
-            # system_prompt=REACT_AGENT_SYSTEM_PROMPT_TEMPLATE,
         )
 
         phoenix_api_key = os.environ.get("PHOENIX_API_KEY", "")
@@ -190,7 +184,7 @@ class ProgressWorkflow(Workflow):
                 system_prompt="You are an AI assistant with access to MCP tools.",
             )
 
-            # Create MCPClient from the config dictionary
+            # Create MCPClient from the config dictionary (use_mcp library)
             # mcp_client = MCPClient.from_dict(google_calendar_mcp_config)
 
             # mcp_agent = MCPAgent(llm=self.model, client=mcp_client, max_steps=30)
@@ -212,11 +206,7 @@ class ProgressWorkflow(Workflow):
                 output_schema=Meeting.model_json_schema(),
             )
 
-            # calendar_data = await mcp_agent.run(f"What is on my calendar for {date}. Include the meeting title, time, and the attendees - names and emails.")
             calendar_data = await mcp_agent.run(mcp_agent_prompt)
-
-            # meeting_info = await ctx.get("meeting_info")
-            # ctx.set("meetings_state, {...})
 
         except Exception as e:
             exception_text = (
@@ -253,7 +243,6 @@ class ProgressWorkflow(Workflow):
 
             extract_calendar_data_prompt = extract_calendar_data_prompt_raw.format(
                 calendar_data=calendar_data,
-                # calendar_data,
                 host_company=os.getenv("MOCK_HOST_COMPANY_NAME", "gmail"),
             )
 
@@ -334,21 +323,6 @@ class ProgressWorkflow(Workflow):
                 )
             )
 
-            search_prompt_raw = RichPromptTemplate(REACT_AGENT_USER_PROMPT_TEMPLATE)
-
-            # meeting_info = await ctx.get("meeting_info")
-
-            # if not meeting_info:
-            #     raise ValueError("Meeting information is not available in the context.")
-
-            # search_prompt = search_prompt_raw.format(
-            #     meeting_info=meeting_info,
-            #     # tools=[search_web_tool[0].metadata.name]
-            #     tools=[search_web_tool.metadata.name],
-            # )
-
-            # calendar_events: List[str] = []
-
             if not event.calendar_events and event.attendees and event.company:
                 calendar_event = {
                     "attendees": event.attendees,
@@ -364,45 +338,54 @@ class ProgressWorkflow(Workflow):
                     "either attendees and company name or calendar events must be provided."
                 )
 
-            search_prompt = search_prompt_raw.format(
-                meetings_info=calendar_events,
-                tools=[search_web_tool.metadata.name],
-            )
+            all_responses = []
 
-            handler = self.agent.run(
-                user_msg=search_prompt,
-            )
+            for calendar_event in calendar_events:
+                search_prompt_raw = RichPromptTemplate(REACT_AGENT_USER_PROMPT_TEMPLATE)
 
-            async for handler_event in handler.stream_events():
+                search_prompt = search_prompt_raw.format(
+                    meeting_info=calendar_event,
+                    tools=[search_web_tool.metadata.name],
+                )
 
-                if isinstance(handler_event, AgentOutput):
-                    if handler_event.response.content:
+                handler = self.agent.run(
+                    user_msg=search_prompt,
+                )
+
+                async for handler_event in handler.stream_events():
+
+                    if isinstance(handler_event, AgentOutput):
+                        if handler_event.response.content:
+                            print(f"{'='*20}\n")
+                            print("📤 Agent Output:", handler_event.response.content)
+                            print(f"{'='*20}\n")
+                        if handler_event.tool_calls:
+                            print(f"{'='*20}\n")
+                            print(
+                                "🛠️  Planning to use tools:",
+                                [call.tool_name for call in handler_event.tool_calls],
+                            )
+                            print(f"{'='*20}\n")
+
+                    elif isinstance(handler_event, ToolCall):
                         print(f"{'='*20}\n")
-                        print("📤 Agent Output:", handler_event.response.content)
-                        print(f"{'='*20}\n")
-                    if handler_event.tool_calls:
-                        print(f"{'='*20}\n")
-                        print(
-                            "🛠️  Planning to use tools:",
-                            [call.tool_name for call in handler_event.tool_calls],
-                        )
+                        print(f"🔨 Calling Tool: {handler_event.tool_name}\n")
+                        print(f"  With arguments: {handler_event.tool_kwargs}\n")
                         print(f"{'='*20}\n")
 
-                elif isinstance(handler_event, ToolCall):
-                    print(f"{'='*20}\n")
-                    print(f"🔨 Calling Tool: {handler_event.tool_name}\n")
-                    print(f"  With arguments: {handler_event.tool_kwargs}\n")
-                    print(f"{'='*20}\n")
+                    elif isinstance(handler_event, ToolCallResult):
+                        print(f"🔧 Tool Call Result: ({handler_event.tool_name})\n")
+                        print(f"  Arguments: {handler_event.tool_kwargs}\n")
+                        print(f"  Output: {handler_event.tool_output}\n")
+                        print(f"{'='*20}\n")
 
-                elif isinstance(handler_event, ToolCallResult):
-                    print(f"🔧 Tool Call Result: ({handler_event.tool_name})\n")
-                    print(f"  Arguments: {handler_event.tool_kwargs}\n")
-                    print(f"  Output: {handler_event.tool_output}\n")
-                    print(f"{'='*20}\n")
+                # Get the final response
+                response = await handler
+                all_responses.append(str(response))
+                print(f"\n===\nresponse: {str(response)}\n===\n")
 
-            # Get the final response
-            response = await handler
-            print(f"\n===\nresponse: {str(response)}\n===\n")
+            combined_response = "\n\n".join(all_responses)
+            print(f"\n===\nCombined Response:\n{combined_response}\n===\n")
 
         except Exception as e:
             exception_text = f"Error running {self.research_step.__name__}\n: {e}"
@@ -412,7 +395,7 @@ class ProgressWorkflow(Workflow):
 
         return FormatEvent(
             message="\nResearch step is complete, full response is attached",
-            response=str(response),
+            response=str(combined_response),
         )
 
     @step

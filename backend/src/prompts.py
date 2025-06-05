@@ -175,11 +175,11 @@ FORMAT_RESPONSE_PROMPT_TEMPLATE = """You are a meeting preparation assistant. Gi
 """
 
 
-REACT_AGENT_USER_PROMPT_TEMPLATE = """Your goal is to help me prepare for an upcoming meetings by gathering information about the attendees and the company we are meeting with.
+REACT_AGENT_USER_PROMPT_TEMPLATE = """Your goal is to help me prepare for an upcoming meeting by gathering information about the attendees and the company we are meeting with.
 
-            You will be provided with the following meetings information:
-
-            {{meetings_info}}
+            You will be provided with a meeting information template that includes the company name, 
+            a list of attendees with their details, and the date of the meeting. 
+            Your task is to research each attendee's professional profile and the company's information to help us understand who we are meeting with and what they do.
 
             Please perform the following tasks, using available tools {{tools}}:
 
@@ -202,6 +202,6 @@ REACT_AGENT_USER_PROMPT_TEMPLATE = """Your goal is to help me prepare for an upc
 
             Do not include anything else in the output besides the requested summaries and links.
             
-            Do this for each meeting in the provided meetings information.
-            {{meetings_info}}
+            Do this for the following meeting:
+            {{meeting_info}}
             """
