@@ -140,7 +140,10 @@ Extract the data from the following text: {{calendar_data}}
 # Extract the data from the following text: {{calendar_data}}
 # """
 
-FORMAT_RESPONSE_PROMPT_TEMPLATE = """You are a meeting preparation assistant. Given a list of research results about the companies and attendees involved in the meetings, your task is to create a well-structured markdown document to prepare your colleagues for the day's meetings. Optimize for clarity and conciseness, and do not include any irrelevant information.
+# FORMAT_RESPONSE_PROMPT_TEMPLATE = """You are a meeting preparation assistant. Given a list of research results about the companies and attendees involved in the meetings, your task is to create a well-structured markdown document to prepare your colleagues for the day's meetings. Optimize for clarity and conciseness, and do not include any irrelevant information.
+
+
+FORMAT_RESPONSE_PROMPT_TEMPLATE = """You are a meeting preparation assistant. Given a list of research results about the companies and attendees involved in the meetings, your task is to create a well-structured markdown document to prepare your colleagues for the day's meetings. Do not include any irrelevant information.
 
         For each meeting, create a section with the following subsections:
 
@@ -224,6 +227,7 @@ RESEARCH_COMPANY_PROMPT_TEMPLATE = """Your goal is to help me prepare for an upc
 
             4. If you are unable to find information about the company, clearly state which information was not found and suggest possible reasons or alternative approaches.
 
+            Include the meeting time and date in the summary if available.
             Do not include anything else in the output besides the requested summaries and links.
             
             Do this for the following meeting:
@@ -239,12 +243,16 @@ RESEARCH_ATTENDEES_PROMPT_TEMPLATE = """Your goal is to help me prepare for an u
             Please perform the following tasks, using available tools {{tools}}:
 
             1. Find the professional profiles (e.g., LinkedIn) of each attendee.
-            - Use all available information such as their full name, email, initials, last name, and the company they work for to accurately identify the correct profiles.
-            - If there are multiple people with the same name, focus on the one who works at the specified company.
+            - Use all available information such as their full name, email, initials, middle name, last name, and the company they work for to accurately identify the correct profiles.
+            - If there are multiple people with the same name, focus on the one who works at the specified company with the exact company name match. If an attendee's full name consists of first name, middle name and last name then find the person with the exact full name match (e.g. Omer Barak Amir)
+            - Make sure that the attendee's profile is relevant to the meeting and the company they work for.
             - For each attendee, provide details on their role, education, experience, and location.
-            - It is crucial to find the profiles of all attendees. If you cannot find a profile initially, try different search strategies or combinations of the available information.
+            - It is crucial to find the profiles of all attendees. If you cannot find a profile initially, try different search strategies or combinations of the available information. Remember that the attendee should work in the company specified in the meeting information.
+            - If you find a profile that matches the attendee's name but not the company, check if they have worked at the specified company in the past and include that information if relevant.
+            - Before proceeding to search for the next attendee, ensure you have exhausted all possibilities for the current attendee or you have already found their profile and have enough information to proceed.
 
             2. Summarize your findings concisely.
+            - First make sure that you have found information about all attendees and the number of attendees is equal to the found information. If not go to the previous step and try to find the missing profiles.
             - For each attendee, provide a brief summary of their profile information and include the link to their profile (e.g. LinkedIn).
             - Ensure the summary is clear and directly relevant to the meeting preparation.
 
@@ -252,6 +260,6 @@ RESEARCH_ATTENDEES_PROMPT_TEMPLATE = """Your goal is to help me prepare for an u
 
             Do not include anything else in the output besides the requested summaries and links.
             
-            Do this for the following meeting:
+            Do this for the following meeting for each attendee:
             {{meeting_info}}
             """

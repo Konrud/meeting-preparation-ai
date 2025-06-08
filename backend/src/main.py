@@ -35,8 +35,8 @@ async def run_workflow_endpoint(request: Request):
         )
 
     try:
-        # Initialize the workflow timeout for 3 minutes
-        progress_workflow = ProgressWorkflow(verbose=True, timeout=180)
+        # Initialize the workflow timeout for 5 minutes === 300 seconds
+        progress_workflow = ProgressWorkflow(verbose=True, timeout=300)
 
         mock_company_name = os.environ.get("MOCK_COMPANY_NAME")
         mock_attendees = os.environ.get("MOCK_ATTENDEES")
