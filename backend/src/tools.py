@@ -22,7 +22,7 @@ async def search_web(query: str) -> List[Document] | str:
 
                 If no results are found, it returns "No results found.
     """
-    results = tavily_tool.search(query=query, max_results=2)
+    results = tavily_tool.search(query=query, max_results=5)
     if results:
         return results
     else:

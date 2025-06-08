@@ -331,6 +331,8 @@ class ProgressWorkflow(Workflow):
             timeFileLogger.error(exception_text)
             raise WorkflowRuntimeError(exception_text)
 
+        timeFileLogger.debug("calendar_events from calendar_data_parser_step:")
+        timeFileLogger.debug(calendar_events)
         return ResearchEvent(calendar_events=calendar_events)
 
     @step
@@ -417,13 +419,15 @@ class ProgressWorkflow(Workflow):
                     RESEARCH_COMPANY_PROMPT_TEMPLATE
                 )
 
+                calendar_event_json = calendar_event.model_dump_json()
+
                 company_search_prompt = company_search_prompt_raw.format(
-                    meeting_info=calendar_event.model_dump_json(),
+                    meeting_info=calendar_event_json,
                     tools=[search_web_tool.metadata.name],
                 )
 
                 company_handler: WorkflowHandler = self.agent.run(
-                    user_msg=company_search_prompt,
+                    user_msg=company_search_prompt
                 )
 
                 # COMPANY STREAM EVENTS
@@ -433,6 +437,8 @@ class ProgressWorkflow(Workflow):
                 company_response = await company_handler
                 # all_responses.append(str(company_response))
                 print(f"\n===\ncompany_response: {str(company_response)}\n===\n")
+                timeFileLogger.debug("\n===\ncompany_response:")
+                timeFileLogger.debug(str(company_response))
 
                 # ----- ATTENDEES -----#
 
@@ -441,7 +447,7 @@ class ProgressWorkflow(Workflow):
                 )
 
                 attendees_search_prompt = attendees_search_prompt_raw.format(
-                    meeting_info=calendar_event.model_dump_json(),
+                    meeting_info=calendar_event_json,
                     tools=[search_web_tool.metadata.name],
                 )
 
@@ -460,7 +466,13 @@ class ProgressWorkflow(Workflow):
                 )
 
                 all_responses.append(str(calendar_event_response_entry))
-                print(f"\n===\nattendees_response: {str(attendees_response)}\n===\n")
+                print(f"\n\n===\n\nattendees_response: {attendees_response}\n===\n\n")
+                timeFileLogger.debug("\n===\nattendees_response.response.content:")
+                timeFileLogger.debug(str(attendees_response.response.content))
+                print("\n--------------------\n")
+                timeFileLogger.debug("\n===\nattendees_response:")
+                timeFileLogger.debug(str(attendees_response))
+                print("\n--------------------\n")
 
                 # for attendee in calendar_event.attendees:
 
@@ -493,6 +505,11 @@ class ProgressWorkflow(Workflow):
             timeFileLogger.error(exception_text)
             raise WorkflowRuntimeError(exception_text)
 
+        timeFileLogger.debug(
+            "combined_response for a company and attendees from research_step:"
+        )
+        timeFileLogger.debug(combined_response)
+
         return FormatEvent(
             message="\nResearch step is complete, full response is attached",
             response=str(combined_response),
@@ -521,6 +538,16 @@ class ProgressWorkflow(Workflow):
             consoleLogger.error(exception_text)
             timeFileLogger.error(exception_text)
             raise WorkflowRuntimeError(exception_text)
+
+        timeFileLogger.debug(
+            "formatted_response for a company and attendees from format_step:"
+        )
+        timeFileLogger.debug(formatted_response)
+
+        timeFileLogger.debug(
+            "formatted_response.text for a company and attendees from format_step:"
+        )
+        timeFileLogger.debug(formatted_response.text)
 
         return FinalEvent(
             # message="format step is complete", response=str(formatted_response.raw)
