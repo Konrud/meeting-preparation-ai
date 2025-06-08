@@ -3,6 +3,7 @@ import "./App.css";
 import { EventType } from "./enums/EventType.enum";
 import type { IStreamingResponse } from "./interfaces/IStreamingResponse.interface";
 import { formatDate } from "./utilities/date";
+import ReactMarkdown from "react-markdown";
 
 function App() {
   const [loading, setLoading] = useState(false);
@@ -62,7 +63,7 @@ function App() {
             } else if (event.type === EventType.FINAL) {
               setStatusType(event.type);
               debugger;
-              setFinalResponse(JSON.stringify(event.data));
+              setFinalResponse(event.data.message);
               console.log(`Final Result: ${event.data}`);
             }
           } catch (e) {
@@ -79,6 +80,32 @@ function App() {
 
   return (
     <main className="l-main">
+      <form action="" onSubmit={handleClick} className="c-form">
+        <fieldset disabled={loading} className="c-form__fieldset">
+          <div className="c-form_field">
+            <label htmlFor="company" className="c-form__label">
+              Company
+            </label>
+            <input type="text" name="company" id="company" className="c-form_input" />
+          </div>
+          <div className="c-form_field">
+            <label htmlFor="attendees" className="c-form__label">
+              Attendees
+            </label>
+            <small>
+              List attendees separated by commas or semicolons (e.g. Mike Spring; Kate Benson)
+            </small>
+            <input type="text" name="attendees" id="attendees" className="c-form_input" />
+          </div>
+          <div className="c-form_field">
+            <button disabled={loading} className="c-form__button">
+              Analyze
+            </button>
+          </div>
+        </fieldset>
+      </form>
+
+
       {loading && (
         <div className="loader-container">
           <section className="c-loader">
@@ -113,35 +140,12 @@ function App() {
         </div>
       )}
 
-      {streamContent?.length > 0 && !loading && (
+      {streamContent?.length > 0 && !loading && finalResponse && (
         <div className="l-final-response-content">
           <h2>Final Response</h2>
-          <div className="c-pre">{finalResponse}</div>
+          <ReactMarkdown>{finalResponse}</ReactMarkdown>
         </div>
       )}
-
-      <form action="" onSubmit={handleClick}>
-        <div className="c-form_field">
-          <label htmlFor="company" className="c-form__label">
-            Company
-          </label>
-          <input type="text" name="company" id="company" className="c-form_input" />
-        </div>
-        <div className="c-form_field">
-          <label htmlFor="attendees" className="c-form__label">
-            Attendees
-          </label>
-          <small>
-            List attendees separated by commas or semicolons (e.g. Mike Spring; Kate Benson)
-          </small>
-          <input type="text" name="attendees" id="attendees" className="c-form_input" />
-        </div>
-        <div className="c-form_field">
-          <button disabled={loading} className="c-form__button">
-            Analyze
-          </button>
-        </div>
-      </form>
     </main>
   );
 }

@@ -72,6 +72,34 @@
 
 }
 
+/* FORM */
+.c-form {
+
+}
+
+.c-form__fieldset {
+  display: flex;
+  flex-direction: column;
+  row-gap: 2rem;
+  padding-block-start: 2rem;
+  padding-inline: 1rem;
+  margin-block-end: 2rem;
+}
+
+.c-form_field {
+  display: flex;
+  flex-direction: column;
+  row-gap: 1rem;
+}
+
+.c-form_field:nth-last-child(2) {
+  margin-block-end: 1rem;
+}
+
+.c-form__label {
+  align-self: flex-start;
+}
+
 /* Error */
 .c-error {
   color: #dc2626;
