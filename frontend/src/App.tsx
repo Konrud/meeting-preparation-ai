@@ -63,7 +63,7 @@ function App() {
             } else if (event.type === EventType.FINAL) {
               setStatusType(event.type);
               debugger;
-              setFinalResponse(event.data.message);
+              setFinalResponse(event.data.toString());
               console.log(`Final Result: ${event.data}`);
             }
           } catch (e) {

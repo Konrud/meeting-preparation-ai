@@ -140,43 +140,6 @@ Extract the data from the following text: {{calendar_data}}
 # Extract the data from the following text: {{calendar_data}}
 # """
 
-# FORMAT_RESPONSE_PROMPT_TEMPLATE = """You are a meeting preparation assistant. Given a list of research results about the companies and attendees involved in the meetings, your task is to create a well-structured markdown document to prepare your colleagues for the day's meetings. Optimize for clarity and conciseness, and do not include any irrelevant information.
-
-
-FORMAT_RESPONSE_PROMPT_TEMPLATE = """You are a meeting preparation assistant. Given a list of research results about the companies and attendees involved in the meetings, your task is to create a well-structured markdown document to prepare your colleagues for the day's meetings. Do not include any irrelevant information.
-
-        For each meeting, create a section with the following subsections:
-
-        - ## [Meeting Title or Company Name] at [Time, if available]
-
-        - ### Meeting Context
-        - **Purpose:** [brief description of the meeting's purpose, if available]
-        - **Background:** [any relevant background information about the meeting or the relationship with the company, if available]
-
-        - ### Company Information
-        - [key facts about the company, such as industry, main product, size, recent news, etc., from the research results]
-
-        - ### Attendees
-        - #### [Attendee Name]
-            - **Role:** [their role or position, from the research results]
-            - **Background:** [brief background information, from the research results]
-            - **Relevant Information:** [any other relevant details, such as their interests, previous interactions, etc., from the research results]
-        - [Repeat for each attendee]
-
-        - [Repeat for each meeting]
-
-        **Formatting Instructions:**
-        - Use proper markdown formatting:
-        - Use **bold** for headings and key terms.
-        - Use *italics* for emphasis.
-        - Use bullet points for lists of facts or information.
-        - Include inline citations as Markdown hyperlinks, e.g., [source](link), for any information from the research results.
-        - If certain information is not available, omit that subsection or provide a note, e.g., 'No background information available.'
-
-        **Inputs:**
-        - Research Results: {{research_results}}
-"""
-
 
 # REACT_AGENT_USER_PROMPT_TEMPLATE = """Your goal is to help me prepare for an upcoming meeting by gathering information about the attendees and the company we are meeting with.
 
@@ -222,7 +185,7 @@ RESEARCH_COMPANY_PROMPT_TEMPLATE = """Your goal is to help me prepare for an upc
             - Focus on their current projects, partnerships, investments, or any significant developments in AI.
 
             2. Summarize your findings concisely.
-            - For the company, provide a summary of their AI initiatives with relevant links to the sources.
+            - For the company, provide a summary of their main product and AI initiatives with relevant links to the sources.
             - Ensure the summary is clear and directly relevant to the meeting preparation.
 
             4. If you are unable to find information about the company, clearly state which information was not found and suggest possible reasons or alternative approaches.
@@ -250,9 +213,10 @@ RESEARCH_ATTENDEES_PROMPT_TEMPLATE = """Your goal is to help me prepare for an u
             - It is crucial to find the profiles of all attendees. If you cannot find a profile initially, try different search strategies or combinations of the available information. Remember that the attendee should work in the company specified in the meeting information.
             - If you find a profile that matches the attendee's name but not the company, check if they have worked at the specified company in the past and include that information if relevant.
             - Before proceeding to search for the next attendee, ensure you have exhausted all possibilities for the current attendee or you have already found their profile and have enough information to proceed.
+            - Each time check yourself that you have found profiles for all attendees before proceeding to the next step.
 
             2. Summarize your findings concisely.
-            - First make sure that you have found information about all attendees and the number of attendees is equal to the found information. If not go to the previous step and try to find the missing profiles.
+            - First, make sure that you have found information about all attendees of the meeting and the number of attendees is equal to the found information. If not go to the previous step and try to find the missing profiles. If there are 5 attendees in the meeting information, you should find profiles for all 5 attendees.
             - For each attendee, provide a brief summary of their profile information and include the link to their profile (e.g. LinkedIn).
             - Ensure the summary is clear and directly relevant to the meeting preparation.
 
@@ -263,3 +227,40 @@ RESEARCH_ATTENDEES_PROMPT_TEMPLATE = """Your goal is to help me prepare for an u
             Do this for the following meeting for each attendee:
             {{meeting_info}}
             """
+
+
+# FORMAT_RESPONSE_PROMPT_TEMPLATE = """You are a meeting preparation assistant. Given a list of research results about the companies and attendees involved in the meetings, your task is to create a well-structured markdown document to prepare your colleagues for the day's meetings. Optimize for clarity and conciseness, and do not include any irrelevant information.
+
+
+FORMAT_RESPONSE_PROMPT_TEMPLATE = """You are a meeting preparation assistant. Given a list of research results about the companies and attendees involved in the meetings, your task is to create a well-structured markdown document to prepare your colleagues for the day's meetings. Do not include any irrelevant information.
+
+        For each meeting, create a section with the following subsections:
+
+        - ## [Meeting Title or Company Name] at [Time, if available]
+
+        - ### Meeting Context
+        - **Purpose:** [brief description of the meeting's purpose, if available]
+        - **Background:** [any relevant background information about the meeting or the relationship with the company, if available]
+
+        - ### Company Information
+        - [key facts about the company, such as industry, main product, size, recent news, etc., from the research results]
+
+        - ### Attendees
+        - #### [Attendee Name]
+            - **Role:** [their role or position, from the research results]
+            - **Relevant Information:** [any other relevant details, such as their interests, previous interactions, etc., from the research results]
+        - [Repeat for each attendee]
+
+        - [Repeat for each meeting]
+
+        **Formatting Instructions:**
+        - Use proper markdown formatting:
+        - Use **bold** for headings and key terms.
+        - Use *italics* for emphasis.
+        - Use bullet points for lists of facts or information.
+        - Include inline citations as Markdown hyperlinks, e.g., [source](link), for any information from the research results.
+        - If certain information is not available, omit that subsection or provide a note, e.g., 'No information available.'
+
+        **Inputs:**
+        - Research Results: {{research_results}}
+"""
