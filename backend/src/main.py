@@ -1,6 +1,7 @@
 import os
 from dotenv import load_dotenv
 import json
+from src.enums import ProgressEventType
 from utils.logger import consoleLogger, timeFileLogger
 from fastapi import Request
 from fastapi import FastAPI, HTTPException
@@ -62,7 +63,9 @@ async def run_workflow_endpoint(request: Request):
 
         workflow_handler = progress_workflow.run(
             ctx=ctx,
-            start_event=ProgressWorkflowStartEvent(date=date),
+            start_event=ProgressWorkflowStartEvent(
+                date=date, company=company, attendees=attendees
+            ),
         )
 
         # Async generator to yield events to the frontend
@@ -86,8 +89,13 @@ async def run_workflow_endpoint(request: Request):
             # Yield the final result after all progress events
             final_result = await workflow_handler
 
+            ctx.write_event_to_stream(
+                ProgressEvent(
+                    type=ProgressEventType.COMPLETED, message="sending final result"
+                )
+            )
+
             yield json.dumps({"type": "final", "data": final_result}) + "\n"
-            
 
         return StreamingResponse(event_generator(), media_type="application/json")
 
