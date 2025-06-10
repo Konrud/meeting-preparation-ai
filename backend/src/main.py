@@ -42,9 +42,18 @@ async def run_workflow_endpoint(request: Request):
         mock_company_name = os.environ.get("MOCK_COMPANY_NAME")
         mock_attendees = os.environ.get("MOCK_ATTENDEES")
 
+        # company = payload.get("company", mock_company_name)
+        # attendees = payload.get("attendees", mock_attendees)
+        # date = payload.get("date", "2025-06-15")
+
         company = payload.get("company", mock_company_name)
         attendees = payload.get("attendees", mock_attendees)
-        date = payload.get("date", "2025-06-15")
+        date = payload.get("date", None)
+
+        timeFileLogger.debug("current request data:")
+        timeFileLogger.debug(
+            f"company: {company} | attendees: {attendees} | date: {date}"
+        )
 
         # Context
         ctx = Context(workflow=progress_workflow)
