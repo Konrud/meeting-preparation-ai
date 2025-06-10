@@ -29,7 +29,7 @@ function App() {
       company?: string;
       attendees?: string[];
     } = {};
-    debugger;
+
     if (!isManualData) {
       const date = formData.get("date");
       dataToSend["date"] = date ? date.toString() : "";
@@ -80,7 +80,6 @@ function App() {
               );
             } else if (event.type === EventType.FINAL) {
               setStatusType(event.type);
-              debugger;
               setFinalResponse(event.data.toString());
               console.log(`Final Result: ${event.data}`);
             }
