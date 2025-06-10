@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import List
 from dotenv import load_dotenv
 from llama_index.core import set_global_handler
+import re
 
 from llama_index.core.agent.workflow import ReActAgent
 from llama_index.core.workflow import StopEvent, Workflow, step, Context
@@ -315,12 +316,27 @@ class ProgressWorkflow(Workflow):
             )
 
             if not event.calendar_events and event.attendees and event.company:
+                translates = str.maketrans({"_": " ", "-": " "})
+
+                attendees_list = [
+                    {
+                        "name": re.split(r"@", item)[0].translate(translates),
+                        "email": item,
+                    }
+                    for item in event.attendees
+                ]
+
                 calendar_event = {
-                    "attendees": event.attendees,
+                    "attendees": attendees_list,
                     "company": event.company,
                 }
+
                 calendar_events = [
-                    Meeting(title="UNKNOWN", meeting_time="UNKNOWN", **calendar_event)
+                    Meeting(
+                        title=f"Meeting with ${event.company}",
+                        meeting_time="UNKNOWN",
+                        **calendar_event,
+                    )
                 ]
 
             elif event.calendar_events:
