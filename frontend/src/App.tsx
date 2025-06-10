@@ -7,6 +7,7 @@ import ReactMarkdown from "react-markdown";
 
 function App() {
   const [loading, setLoading] = useState(false);
+  const [isManualData, setIsManualData] = useState(false);
   const [error, setError] = useState<string>("");
   const [statusType, setStatusType] = useState<string>("");
   const [streamContent, setStreamContent] = useState<string[]>([]);
@@ -14,9 +15,6 @@ function App() {
 
   useEffect(() => {
     if (streamContent.length > 0) {
-      // if (statusType !== EventType.COMPANY_EVENT) {
-      //   setStatusType('');
-      // }
       setLoading(false);
     }
   }, [streamContent, statusType]);
@@ -24,6 +22,24 @@ function App() {
   const handleClick = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
+    const formData = new FormData(e.currentTarget);
+
+    const dataToSend: {
+      date?: string;
+      company?: string;
+      attendees?: string[];
+    } = {};
+    debugger;
+    if (!isManualData) {
+      const date = formData.get("date");
+      dataToSend["date"] = date ? date.toString() : "";
+    } else {
+      const company = formData.get("company") || "";
+      const attendees = formData.get("attendees") || "";
+      dataToSend["company"] = company as string;
+      dataToSend["attendees"] = (attendees as string).split(/[,\s]\s*/);
+    }
+
     try {
       const response = await fetch("http://localhost:5000/api/run-workflow", {
         method: "POST",
@@ -31,7 +47,7 @@ function App() {
           "Content-Type": "application/json",
           "Access-Control-Allow-Origin": "*",
         },
-        body: JSON.stringify({ company: "monday.com", attendees: ["Maya Asher"] }),
+        body: JSON.stringify(dataToSend),
       });
 
       const reader = response.body?.getReader();
@@ -59,7 +75,9 @@ function App() {
             if (event.type === EventType.PROGRESS) {
               setStatusType(event.data.type);
               setStreamContent((prev) => [...prev, event.data.message]);
-              console.log(`Progress: ${event.data.type} - ${event.data.message}`);
+              console.log(
+                `Progress: ${event.data.type} - ${event.data.message}`
+              );
             } else if (event.type === EventType.FINAL) {
               setStatusType(event.type);
               debugger;
@@ -78,33 +96,87 @@ function App() {
     }
   };
 
+  const handleManualDataChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const isChecked = e.target.checked;
+
+    setIsManualData(isChecked);
+  };
+
   return (
     <main className="l-main">
       <form action="" onSubmit={handleClick} className="c-form">
+        <fieldset
+          disabled={loading || isManualData}
+          className="c-form__fieldset"
+        >
+          <div className="c-form_field">
+            <label htmlFor="date" className="c-form__label">
+              Meeting date
+            </label>
+            <small>Meeting date in your Google Calendar</small>
+            <input
+              type="date"
+              name="date"
+              id="date"
+              className="c-form_input"
+              required={!isManualData}
+            />
+          </div>
+        </fieldset>
         <fieldset disabled={loading} className="c-form__fieldset">
+          <div className="c-form_field">
+            <label htmlFor="manualData" className="c-form__label">
+              Add data manually
+            </label>
+            <input
+              type="checkbox"
+              name="manualData"
+              id="manualData"
+              className="c-form_input"
+              onChange={handleManualDataChange}
+            />
+          </div>
+        </fieldset>
+        <fieldset
+          disabled={loading || !isManualData}
+          className="c-form__fieldset"
+        >
           <div className="c-form_field">
             <label htmlFor="company" className="c-form__label">
               Company
             </label>
-            <input type="text" name="company" id="company" className="c-form_input" />
+            <input
+              type="text"
+              name="company"
+              id="company"
+              className="c-form_input"
+              required={isManualData}
+            />
           </div>
           <div className="c-form_field">
             <label htmlFor="attendees" className="c-form__label">
               Attendees
             </label>
-            <small>
-              List attendees separated by commas or semicolons (e.g. Mike Spring; Kate Benson)
+            <small className="c-form__input-hint">
+              List of attendees' emails separated by commas or whitespace (e.g.
+              mike_spring@mike.com, katebenson@kate.com)
             </small>
-            <input type="text" name="attendees" id="attendees" className="c-form_input" />
-          </div>
-          <div className="c-form_field">
-            <button disabled={loading} className="c-form__button">
-              Analyze
-            </button>
+            <input
+              type="email"
+              name="attendees"
+              id="attendees"
+              className="c-form_input"
+              multiple
+              required={isManualData}
+            />
           </div>
         </fieldset>
+        <div className="c-form_field">
+          <button disabled={loading} className="c-form__button">
+            Analyze
+          </button>
+        </div>
       </form>
-
 
       {loading && (
         <div className="loader-container">
@@ -115,7 +187,9 @@ function App() {
             <span className="c-loader__item"></span>
             <span className="c-loader__item"></span>
           </section>
-          <p className="loader-container__loading-text">Processing, please wait</p>
+          <p className="loader-container__loading-text">
+            Processing, please wait
+          </p>
         </div>
       )}
 
@@ -141,9 +215,11 @@ function App() {
       )}
 
       {streamContent?.length > 0 && !loading && finalResponse && (
-        <div className="l-final-response-content">
+        <div className="l-final-response">
           <h2>Final Response</h2>
-          <ReactMarkdown>{finalResponse}</ReactMarkdown>
+          <div className="l-final-response__content">
+            <ReactMarkdown>{finalResponse}</ReactMarkdown>
+          </div>
         </div>
       )}
     </main>
