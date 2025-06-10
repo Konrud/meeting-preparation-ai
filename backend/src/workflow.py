@@ -170,20 +170,6 @@ class ProgressWorkflow(Workflow):
                 )
             )
 
-            # For now we will be using Google Calendar API to get the meeting info
-            # google_calendar_mcp_config = {
-            #     "mcpServers": {
-            #         "google_calendar": {
-            #             "command": "node",
-            #             "args": [os.getenv("GOOGLE_CALENDAR_MCP_CONFIG", "")],
-            #         }
-            #     },
-            # }
-
-            # https://docs.llamaindex.ai/en/stable/examples/tools/mcp/
-            # async
-            # tools = await aget_tools_from_mcp_url("http://127.0.0.1:8000/mcp")
-
             # 1. Get the project root directory
             project_root = os.path.abspath(
                 os.path.join(
@@ -202,8 +188,6 @@ class ProgressWorkflow(Workflow):
                 "node", args=[google_calendar_mcp_path]
             )  # stdio
 
-            # tools = local_client.list_tools()
-
             mcp_tool_spec = McpToolSpec(client=local_client)
             tools = await mcp_tool_spec.to_tool_list_async()
 
@@ -211,15 +195,9 @@ class ProgressWorkflow(Workflow):
                 name="MCP Agent",
                 description="Agent using MCP tools.",
                 tools=tools,
-                # llm=self.model.as_structured_llm(output_cls=CalendarData),
                 llm=self.model,
                 system_prompt="You are an AI assistant with access to MCP tools.",
             )
-
-            # Create MCPClient from the config dictionary (use_mcp library)
-            # mcp_client = MCPClient.from_dict(google_calendar_mcp_config)
-
-            # mcp_agent = MCPAgent(llm=self.model, client=mcp_client, max_steps=30)
 
             meeting_date = event.date
 
@@ -278,12 +256,6 @@ class ProgressWorkflow(Workflow):
                 host_company=os.getenv("MOCK_HOST_COMPANY_NAME", "gmail"),
             )
 
-            # structured_model = self.model.as_structured_llm(output_cls=Meeting)
-
-            # response_as_pydantic_obj = structured_model.complete(
-            #     prompt=extract_calendar_data_prompt
-            # )
-
             program = LLMTextCompletionProgram.from_defaults(
                 output_cls=CalendarData,
                 llm=self.model,
@@ -292,10 +264,6 @@ class ProgressWorkflow(Workflow):
             )
 
             response_as_pydantic_obj = program()
-
-            # response_as_pydantic_obj: CalendarData = self.model.structured_predict(
-            #     CalendarData, extract_calendar_data_prompt
-            # )
 
             calendar_data_item: CalendarData = response_as_pydantic_obj
 
@@ -320,7 +288,6 @@ class ProgressWorkflow(Workflow):
                     )
                 )
 
-                # calendar_events.append(meeting.model_dump_json())
                 calendar_events.append(meeting)
 
         except Exception as e:
@@ -366,54 +333,6 @@ class ProgressWorkflow(Workflow):
 
             all_responses = []
 
-            # for calendar_event in calendar_events:
-            #     search_prompt_raw = RichPromptTemplate(REACT_AGENT_USER_PROMPT_TEMPLATE)
-
-            #     search_prompt = search_prompt_raw.format(
-            #         meeting_info=calendar_event,
-            #         tools=[search_web_tool.metadata.name],
-            #     )
-
-            #     handler = self.agent.run(
-            #         user_msg=search_prompt,
-            #     )
-
-            #     async for handler_event in handler.stream_events():
-
-            #         if isinstance(handler_event, AgentOutput):
-            #             if handler_event.response.content:
-            #                 print(f"{'='*20}\n")
-            #                 print("📤 Agent Output:", handler_event.response.content)
-            #                 print(f"{'='*20}\n")
-            #             if handler_event.tool_calls:
-            #                 print(f"{'='*20}\n")
-            #                 print(
-            #                     "🛠️  Planning to use tools:",
-            #                     [call.tool_name for call in handler_event.tool_calls],
-            #                 )
-            #                 print(f"{'='*20}\n")
-
-            #         elif isinstance(handler_event, ToolCall):
-            #             print(f"{'='*20}\n")
-            #             print(f"🔨 Calling Tool: {handler_event.tool_name}\n")
-            #             print(f"  With arguments: {handler_event.tool_kwargs}\n")
-            #             print(f"{'='*20}\n")
-
-            #         elif isinstance(handler_event, ToolCallResult):
-            #             print(f"🔧 Tool Call Result: ({handler_event.tool_name})\n")
-            #             print(f"  Arguments: {handler_event.tool_kwargs}\n")
-            #             print(f"  Output: {handler_event.tool_output}\n")
-            #             print(f"{'='*20}\n")
-
-            #     # Get the final response
-            #     response = await handler
-            #     all_responses.append(str(response))
-            #     print(f"\n===\nresponse: {str(response)}\n===\n")
-
-            #   RUN TASK IN PARALLEL
-            #         tasks = [create_item(container_name, item) for item in processed_items]
-            #  results = await asyncio.gather(*tasks, return_exceptions=True)
-
             companies_dict = {}
 
             for calendar_event in calendar_events:
@@ -437,7 +356,6 @@ class ProgressWorkflow(Workflow):
 
                 # Get the final response for company
                 company_response = await company_handler
-                # all_responses.append(str(company_response))
 
                 companies_dict[calendar_event.company] = str(company_response)
 
@@ -485,28 +403,6 @@ class ProgressWorkflow(Workflow):
                 timeFileLogger.debug("\n===\nattendees_response:")
                 timeFileLogger.debug(str(attendees_response))
                 print("\n--------------------\n")
-
-                # for attendee in calendar_event.attendees:
-
-                #     attendees_search_prompt_raw = RichPromptTemplate(
-                #         RESEARCH_ATTENDEES_PROMPT_TEMPLATE
-                #     )
-
-                #     attendees_search_prompt = attendees_search_prompt_raw.format(
-                #         meeting_info=calendar_event,
-                #         tools=[search_web_tool.metadata.name],
-                #     )
-
-                #     handler: WorkflowHandler = self.agent.run(
-                #         user_msg=attendees_search_prompt,
-                #     )
-
-                #     await stream_events(handler)
-
-                #     # Get the final response
-                #     response = await handler
-                #     all_responses.append(str(response))
-                #     print(f"\n===\nresponse: {str(response)}\n===\n")
 
             combined_response = "\n\n".join(all_responses)
             print(f"\n===\nCombined Response:\n{combined_response}\n===\n")
@@ -562,7 +458,6 @@ class ProgressWorkflow(Workflow):
         timeFileLogger.debug(formatted_response.text)
 
         return FinalEvent(
-            # message="format step is complete", response=str(formatted_response.raw)
             message="format step is complete",
             response=str(formatted_response.text),
         )
