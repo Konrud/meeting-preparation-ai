@@ -414,6 +414,8 @@ class ProgressWorkflow(Workflow):
             #         tasks = [create_item(container_name, item) for item in processed_items]
             #  results = await asyncio.gather(*tasks, return_exceptions=True)
 
+            companies_dict = {}
+
             for calendar_event in calendar_events:
                 company_search_prompt_raw = RichPromptTemplate(
                     RESEARCH_COMPANY_PROMPT_TEMPLATE
@@ -436,11 +438,16 @@ class ProgressWorkflow(Workflow):
                 # Get the final response for company
                 company_response = await company_handler
                 # all_responses.append(str(company_response))
+
+                companies_dict[calendar_event.company] = str(company_response)
+
                 print(f"\n===\ncompany_response: {str(company_response)}\n===\n")
                 timeFileLogger.debug("\n===\ncompany_response:")
                 timeFileLogger.debug(str(company_response))
 
+            for calendar_event in calendar_events:
                 # ----- ATTENDEES -----#
+                calendar_event_json = calendar_event.model_dump_json()
 
                 attendees_search_prompt_raw = RichPromptTemplate(
                     RESEARCH_ATTENDEES_PROMPT_TEMPLATE
@@ -462,13 +469,18 @@ class ProgressWorkflow(Workflow):
                 attendees_response = await attendees_handler
 
                 calendar_event_response_entry = "\n".join(
-                    [str(company_response), str(attendees_response)]
+                    [
+                        str(companies_dict[calendar_event.company]),
+                        str(attendees_response),
+                    ]
                 )
 
                 all_responses.append(str(calendar_event_response_entry))
+
                 print(f"\n\n===\n\nattendees_response: {attendees_response}\n===\n\n")
                 timeFileLogger.debug("\n===\nattendees_response.response.content:")
                 timeFileLogger.debug(str(attendees_response.response.content))
+
                 print("\n--------------------\n")
                 timeFileLogger.debug("\n===\nattendees_response:")
                 timeFileLogger.debug(str(attendees_response))

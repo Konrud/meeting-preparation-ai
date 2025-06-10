@@ -185,7 +185,7 @@ RESEARCH_COMPANY_PROMPT_TEMPLATE = """Your goal is to help me prepare for an upc
             - Focus on their current projects, partnerships, investments, or any significant developments in AI.
 
             2. Summarize your findings concisely.
-            - For the company, provide a summary of their main product and AI initiatives with relevant links to the sources.
+            - Provide a summary of the company's main product and AI initiatives with relevant links to the sources.
             - Ensure the summary is clear and directly relevant to the meeting preparation.
 
             4. If you are unable to find information about the company, clearly state which information was not found and suggest possible reasons or alternative approaches.
@@ -197,9 +197,9 @@ RESEARCH_COMPANY_PROMPT_TEMPLATE = """Your goal is to help me prepare for an upc
             {{meeting_info}}
             """
 
-RESEARCH_ATTENDEES_PROMPT_TEMPLATE = """Your goal is to help me prepare for an upcoming meeting by gathering information about the attendees we are meeting with.
+RESEARCH_ATTENDEES_PROMPT_TEMPLATE = """Your goal is to help me prepare for an upcoming meeting by gathering information about the attendees of the meeting.
 
-            You will be provided with a meeting information template that includes the company name, 
+            You will be provided with a meeting information that includes the company name, 
             a list of attendees with their details, and the date of the meeting. 
             Your task is to research each attendee's professional profile to help us understand who we are meeting with and what they do.
 
@@ -212,11 +212,11 @@ RESEARCH_ATTENDEES_PROMPT_TEMPLATE = """Your goal is to help me prepare for an u
             - For each attendee, provide details on their role, education, experience, and location.
             - It is crucial to find the profiles of all attendees. If you cannot find a profile initially, try different search strategies or combinations of the available information. Remember that the attendee should work in the company specified in the meeting information.
             - If you find a profile that matches the attendee's name but not the company, check if they have worked at the specified company in the past and include that information if relevant.
-            - Before proceeding to search for the next attendee, ensure you have exhausted all possibilities for the current attendee or you have already found their profile and have enough information to proceed.
-            - Each time check yourself that you have found profiles for all attendees before proceeding to the next step.
+            - Before proceeding to search for the next attendee, ensure you have enough information for the current attendee to proceed.
+            - Each time check yourself that you have found profiles for all attendees of the meeting before proceeding to the next step. The number of attendees in the meeting information should match the number of profiles you have found. If not, go back to the previous step and try to find the missing profiles.
 
             2. Summarize your findings concisely.
-            - First, make sure that you have found information about all attendees of the meeting and the number of attendees is equal to the found information. If not go to the previous step and try to find the missing profiles. If there are 5 attendees in the meeting information, you should find profiles for all 5 attendees.
+            - First, make sure that you have found information about all attendees of the meeting and the number of attendees is equal to the found information. If not go to the previous step and try to find the missing profiles. If there are 5 attendees in the meeting information, you should find profiles for all 5 of them.
             - For each attendee, provide a brief summary of their profile information and include the link to their profile (e.g. LinkedIn).
             - Ensure the summary is clear and directly relevant to the meeting preparation.
 
