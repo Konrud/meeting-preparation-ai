@@ -87,8 +87,7 @@ async def run_workflow_endpoint(request: Request):
             final_result = await workflow_handler
 
             yield json.dumps({"type": "final", "data": final_result}) + "\n"
-
-        debug333 = 333
+            
 
         return StreamingResponse(event_generator(), media_type="application/json")
 
