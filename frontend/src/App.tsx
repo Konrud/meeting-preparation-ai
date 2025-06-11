@@ -28,16 +28,20 @@ function App() {
       date?: string;
       company?: string;
       attendees?: string[];
+      excludeEmails?: string[];
     } = {};
 
     if (!isManualData) {
       const date = formData.get("date");
-      dataToSend["date"] = date ? date.toString() : "";
+      const excludeEmails = formData.get("excludeEmails");
+
+      dataToSend.date = date ? date.toString() : "";
+      dataToSend.excludeEmails = (excludeEmails as string).split(/[,\s]\s*/);
     } else {
       const company = formData.get("company") || "";
       const attendees = formData.get("attendees") || "";
-      dataToSend["company"] = company as string;
-      dataToSend["attendees"] = (attendees as string).split(/[,\s]\s*/);
+      dataToSend.company = company as string;
+      dataToSend.attendees = (attendees as string).split(/[,\s]\s*/);
     }
 
     try {
@@ -121,7 +125,26 @@ function App() {
               required={!isManualData}
             />
           </div>
+          <div className="c-form_field">
+            <label htmlFor="excludeEmails" className="c-form__label">
+              Emails to exclude from research
+              <small>(your email or emails of your colleagues)</small>
+            </label>
+            <small className="c-form__input-hint">
+              List of emails to exclude from the research separated by commas or
+              whitespace (e.g. mike_spring@mike.com, katebenson@kate.com).
+            </small>
+            <input
+              type="email"
+              name="excludeEmails"
+              id="excludeEmails"
+              className="c-form_input"
+              multiple
+              required={!isManualData}
+            />
+          </div>
         </fieldset>
+
         <fieldset disabled={loading} className="c-form__fieldset">
           <div className="c-form_field">
             <label htmlFor="manualData" className="c-form__label">
@@ -136,6 +159,7 @@ function App() {
             />
           </div>
         </fieldset>
+
         <fieldset
           disabled={loading || !isManualData}
           className="c-form__fieldset"
@@ -170,6 +194,7 @@ function App() {
             />
           </div>
         </fieldset>
+
         <div className="c-form_field">
           <button disabled={loading} className="c-form__button">
             Analyze

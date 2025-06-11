@@ -1,7 +1,8 @@
 import os
+import re
 from dotenv import load_dotenv
 import json
-from src.enums import ProgressEventType
+from src.enums import CtxKeys, ProgressEventType
 from utils.logger import consoleLogger, timeFileLogger
 from fastapi import Request
 from fastapi import FastAPI, HTTPException
@@ -42,24 +43,31 @@ async def run_workflow_endpoint(request: Request):
 
         mock_company_name = os.environ.get("MOCK_COMPANY_NAME")
         mock_attendees = os.environ.get("MOCK_ATTENDEES")
-
-        # company = payload.get("company", mock_company_name)
-        # attendees = payload.get("attendees", mock_attendees)
-        # date = payload.get("date", "2025-06-15")
+        mock_exclude_emails = os.environ.get("EXCLUDE_EMAILS") or ""
 
         company = payload.get("company", mock_company_name)
         attendees = payload.get("attendees", mock_attendees)
+        exclude_emails = payload.get(
+            "excludeEmails", re.split(", ", mock_exclude_emails)
+        )
         date = payload.get("date", None)
 
         timeFileLogger.debug("current request data:")
         timeFileLogger.debug(
-            f"company: {company} | attendees: {attendees} | date: {date}"
+            f"company: {company} | attendees: {attendees} | date: {date} | exclude_emails: {exclude_emails}"
         )
 
         # Context
         ctx = Context(workflow=progress_workflow)
 
-        await ctx.set("meeting_info", {"company": company, "attendees": attendees})
+        await ctx.set(
+            key=CtxKeys.MEETING_INFO.value,
+            value={
+                "company": company,
+                "attendees": attendees,
+                "exclude_emails": exclude_emails,
+            },
+        )
 
         workflow_handler = progress_workflow.run(
             ctx=ctx,
