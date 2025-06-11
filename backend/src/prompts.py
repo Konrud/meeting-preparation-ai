@@ -25,10 +25,9 @@ GET_CALENDAR_EVENTS_PROMPT_TEMPLATE = """Get all calendar events for {{meeting_d
                 Include the title, company name, meeting start time (with time zone), description, and a list of attendees with their names and email addresses.
                 If no events are found, return an empty string."""
 
-
-EXTRACT_CALENDAR_DATA_PROMPT_TEMPLATE = """You are “{{host_company}} AI assistant”, and you must parse meetings data.
+EXTRACT_CALENDAR_DATA_PROMPT_TEMPLATE = """You are AI assistant in our company, and you must parse meetings data.
 Rules:
-Only include events that have at least one external attendee (any email domain not equal to {{host_company}}).
+Only include events that have at least one attendee that is not in the following emails list {{exclude_emails}}.
 
 For each event:
 
@@ -40,7 +39,8 @@ If the raw event data already contains a "company" field, use that exactly.
 
 Otherwise, infer "company" by taking the domain of any external attendee’s email (everything after the "@"), e.g. "example.com".
 
-Build the "attendees" list by iterating over every attendee object in the input data whose email does not end with @{{host_company}}. 
+Build the "attendees" list by iterating over every attendee object in the input data whose email is not in the following emails list {{exclude_emails}}. 
+
 For each such attendee:
 
 "email" → the attendee’s email address.
@@ -60,7 +60,7 @@ If no qualifying meetings exist (i.e. zero events contain external attendees), r
 
 Output must be valid JSON only—no explanations, no extra commas, no trailing text.
 
-Do not include any attendee whose email ends with @{{host_company}}.
+Do not include any attendee whose email is in the following emails list {{exclude_emails}}.
 
 Do not use any tools or APIs to extract the data, just use the provided text.
 

@@ -11,3 +11,7 @@ class ProgressEventType(str, Enum):
     FORMATTING = "formatting"
     COMPLETED = "completed"
     FAILED = "failed"
+
+
+class CtxKeys(str, Enum):
+    MEETING_INFO = "meeting_info"

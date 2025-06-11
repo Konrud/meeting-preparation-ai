@@ -17,7 +17,7 @@ from llama_index.core.workflow.errors import WorkflowRuntimeError
 from llama_index.core.prompts import RichPromptTemplate
 from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 from llama_index.core.workflow.handler import WorkflowHandler
-from src.enums import ProgressEventType
+from src.enums import CtxKeys, ProgressEventType
 from src.events import (
     CalendarDataParserEvent,
     CalendarDataRetrievalEvent,
@@ -243,6 +243,16 @@ class ProgressWorkflow(Workflow):
                 )
             )
 
+            meeting_info = await ctx.get(CtxKeys.MEETING_INFO.value, None)
+
+            if not meeting_info:
+                raise ValueError("Meeting information is not available in the context.")
+
+            exclude_emails = meeting_info.get("exclude_emails", [])
+
+            if not exclude_emails:
+                raise ValueError("Exclude emails are not available in the context.")
+
             calendar_data = event.calendar_data
 
             if not calendar_data:
@@ -254,7 +264,7 @@ class ProgressWorkflow(Workflow):
 
             extract_calendar_data_prompt = extract_calendar_data_prompt_raw.format(
                 calendar_data=calendar_data,
-                host_company=os.getenv("MOCK_HOST_COMPANY_NAME", "gmail"),
+                exclude_emails=exclude_emails,
             )
 
             program = LLMTextCompletionProgram.from_defaults(
